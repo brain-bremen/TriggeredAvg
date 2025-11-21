@@ -6,11 +6,11 @@ The plugin is based on the [Online PSTH plugin](https://github.com/open-ephys-pl
 
 ## TODO
 
-- [ ] Fix bug leading to halt
-- [ ] Handle changes of capture parameters (pre/post samples), i.e. reset resize average buffers
+- [ ] Fix not updating average anymore after a few trials
+- [ ] Show number of averages collected per trigger source
+- [X] Handle changes of capture parameters (pre/post samples), i.e. reset resize average buffers
 - [ ] Add option to save averages to disk
 - [ ] Add option to reset average
-- [ ] Show number of averages collected per trigger source
 - [ ] Handle multiple data streams (currently always using the first)
 
 
