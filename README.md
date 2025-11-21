@@ -4,12 +4,15 @@ A work-in-progress plugin for the Open Ephys GUI that averages continuous
 signals triggered by TTL events and/or messages, similar to a triggered display on an oscilloscope.
 The plugin is based on the [Online PSTH plugin](https://github.com/open-ephys-plugins/online-psth).
 
-## Features
+## TODO
 
-- **Multi-trigger Support**: Responds to TTL lines, broadcast messages, or combined TTL+message triggers
-- **Flexible Time Windows**: Configurable pre-trigger (-500ms to -10ms) and post-trigger (10ms to 5000ms) windows
-- **Channel Selection**: Display all channels or select specific channels for visualization
-- **Multiple Display Modes**: Individual traces, averaged traces, overlay mode, or both
+- [ ] Fix bug leading to halt
+- [ ] Handle changes of capture parameters (pre/post samples), i.e. reset resize average buffers
+- [ ] Add option to save averages to disk
+- [ ] Add option to reset average
+- [ ] Show number of averages collected per trigger source
+- [ ] Handle multiple data streams (currently always using the first)
+
 
 ## Installation
 
@@ -29,8 +32,46 @@ The plugin is based on the [Online PSTH plugin](https://github.com/open-ephys-pl
 
 ...
 
-### Controls
+## Development
 
-- **Clear Data**: Reset all collected data
-- **Save**: Export traces and statistics
-- **Auto Scale**: Automatically adjust amplitude range
+### Architecture
+
+The plugin uses a multi-threaded architecture to ensure real-time processing and responsive visualization:
+
+#### Threads
+
+1. **Audio/Processing Thread** (`TriggeredAvgNode::process`)
+   - Runs in the OpenEphys audio callback
+   - Continuously writes incoming continuous data to a `MultiChannelRingBuffer`
+   - Monitors TTL events and broadcast messages
+   - When a trigger event matches a configured trigger source, creates a `CaptureRequest` and queues it for the Data Collector thread
+   - Operates lock-free for audio data writing to avoid blocking real-time processing
+
+2. **Data Collector Thread** (`DataCollector::run`)
+   - Background thread named "TriggeredAvg: Data Collector"
+   - Processes queued `CaptureRequest` objects by:
+     - Reading the requested pre/post-trigger window from the ring buffer
+     - Adding the captured data to the appropriate `MultiChannelAverageBuffer`
+   - Notifies the message thread via `AsyncUpdater` when average buffers are updated
+
+3. **Message/GUI Thread** (`TriggeredAvgNode::handleAsyncUpdate` & `TriggeredAvgCanvas`)
+   - JUCE message thread that handles all UI operations
+   - Triggered asynchronously by the Data Collector thread when new data is available
+   - Refreshes the canvas display to show updated averages
+   - Handles user interactions with the editor and canvas
+
+#### Key Components
+
+- **MultiChannelRingBuffer**: Thread-safe circular buffer that stores ~10 seconds of continuous data with sample-accurate indexing
+- **DataStore**: Thread-safe storage for `MultiChannelAverageBuffer` objects, one per trigger source
+- **MultiChannelAverageBuffer**: Accumulates sum and sum-of-squares for computing running averages and standard deviations
+- **TriggerSources**: Manages multiple trigger conditions (TTL, message, or combined triggers)
+- **CaptureRequest**: Data structure containing trigger sample number, trigger source, and pre/post sample counts
+
+#### Thread Synchronization
+
+- Ring buffer uses recursive mutex (`writeLock`) and atomic variables for sample indexing
+- Data Collector uses `CriticalSection` (`triggerQueueLock`) for the capture request queue
+- Data Store uses recursive mutex for accessing average buffers
+- Asynchronous updates via `AsyncUpdater` ensure GUI updates happen on the message thread
+
