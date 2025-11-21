@@ -19,10 +19,14 @@ struct CaptureRequest
     int postSamples;
 };
 
+// Thread-safe storage of average buffers
 class DataStore
 {
 public:
-    void ResetAndResizeAverageBufferForTriggerSource (TriggerSource* source, int nChannels, int nSamples);
+    void ResetAndResizeAverageBufferForTriggerSource (TriggerSource* source,
+                                                      int nChannels,
+                                                      int nSamples);
+    void ResizeAllAverageBuffers (int nChannels, int nSamples, bool clear = true);
 
     MultiChannelAverageBuffer* getRefToAverageBufferForTriggerSource (TriggerSource* source)
     {

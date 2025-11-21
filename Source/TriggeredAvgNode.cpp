@@ -126,11 +126,25 @@ void TriggeredAvgNode::parameterValueChanged (Parameter* param)
     }
     else if (param->getName().equalsIgnoreCase (ParameterNames::pre_ms))
     {
-        // TODO:
+        const int totalSamples = getNumberOfSamples();
+        m_dataStore->ResizeAllAverageBuffers (getTotalNumInputChannels(), totalSamples, false);
+
+        if (m_canvas)
+        {
+            m_canvas->setWindowSizeMs (getPreWindowSizeMs(), getPostWindowSizeMs());
+            triggerAsyncUpdate();
+        }
     }
     else if (param->getName().equalsIgnoreCase (ParameterNames::post_ms))
     {
-        // TODO:
+        const int totalSamples = getNumberOfSamples();
+        m_dataStore->ResizeAllAverageBuffers (getTotalNumInputChannels(), totalSamples, false);
+
+        if (m_canvas)
+        {
+            m_canvas->setWindowSizeMs (getPreWindowSizeMs(), getPostWindowSizeMs());
+            triggerAsyncUpdate();
+        }
     }
 }
 

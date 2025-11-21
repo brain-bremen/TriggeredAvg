@@ -24,6 +24,17 @@ void DataStore::ResetAndResizeAverageBufferForTriggerSource (TriggerSource* sour
     }
 }
 
+void TriggeredAverage::DataStore::ResizeAllAverageBuffers (int nChannels, int nSamples, bool clear)
+{
+    auto lock = GetLock();
+    for (auto& [source, buffer] : m_averageBuffers)
+    {
+        buffer.setSize (nChannels, nSamples);
+        if (clear)
+            buffer.resetTrials();
+    }
+}
+
 DataCollector::DataCollector (TriggeredAvgNode* viewer_,
                               MultiChannelRingBuffer* buffer_,
                               DataStore* datastore_)
