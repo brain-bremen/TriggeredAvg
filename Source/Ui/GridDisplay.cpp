@@ -9,6 +9,12 @@ TriggeredAverage::GridDisplay::GridDisplay() = default;
 
 void TriggeredAverage::GridDisplay::refresh()
 {
+    // Invalidate cache to force panels to check for new data
+    for (auto panel : panels)
+    {
+        panel->invalidateCache();
+    }
+    
     for (auto panel : panels)
     {
         panel->repaint();
@@ -163,7 +169,9 @@ void TriggeredAverage::GridDisplay::clearPanels()
     for (auto hist : panels)
     {
         hist->clear();
+
     }
+
 }
 
 DynamicObject TriggeredAverage::GridDisplay::getInfo()

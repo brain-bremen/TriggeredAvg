@@ -72,7 +72,7 @@ private:
     TimeAxis* timescale;
 };
 
-class TriggeredAvgCanvas : public Visualizer
+class TriggeredAvgCanvas : public Visualizer, public Timer
 {
 public:
     TriggeredAvgCanvas (TriggeredAvgNode* processor);
@@ -83,6 +83,13 @@ public:
         if (m_grid)
             m_grid->refresh();
     }
+
+    /** Timer callback for regular display updates */
+    void timerCallback() override
+    {
+        refresh();
+    }
+
     /** Called when the Visualizer's tab becomes visible after being hidden .*/
     void refreshState() override;
 
@@ -114,9 +121,6 @@ public:
 
     /** Prepare for update*/
     void prepareToUpdate();
-
-    // Visualizer calls refresh but we don't, unless new data was added (from Processor)
-    void timerCallback() override {};
 
     /** Save plot type*/
     void saveCustomParametersToXml (XmlElement* xml) override;

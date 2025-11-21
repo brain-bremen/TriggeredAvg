@@ -191,6 +191,7 @@ MultiChannelAverageBuffer::MultiChannelAverageBuffer (int numChannels, int numSa
 {
     m_sumBuffer.setSize (numChannels, numSamples);
     m_sumSquaresBuffer.setSize (numChannels, numSamples);
+    m_averageBuffer.setSize (numChannels, numSamples);
     resetTrials();
 }
 MultiChannelAverageBuffer::MultiChannelAverageBuffer (MultiChannelAverageBuffer&& other) noexcept
@@ -199,6 +200,7 @@ MultiChannelAverageBuffer::MultiChannelAverageBuffer (MultiChannelAverageBuffer&
 {
     m_sumBuffer = std::move (other.m_sumBuffer);
     m_sumSquaresBuffer = std::move (other.m_sumSquaresBuffer);
+    m_averageBuffer = std::move (other.m_averageBuffer);
     m_numTrials = other.m_numTrials;
 }
 MultiChannelAverageBuffer&
@@ -208,6 +210,7 @@ MultiChannelAverageBuffer&
     {
         m_sumBuffer = std::move (other.m_sumBuffer);
         m_sumSquaresBuffer = std::move (other.m_sumSquaresBuffer);
+        m_averageBuffer = std::move (other.m_averageBuffer);
         m_numTrials = other.m_numTrials;
         m_numChannels = other.m_numChannels;
         m_numSamples = other.m_numSamples;
@@ -219,46 +222,41 @@ void MultiChannelAverageBuffer::addDataToAverageFromBuffer (const juce::AudioBuf
     jassert (buffer.getNumChannels() == m_numChannels);
     jassert (buffer.getNumSamples() == m_numSamples);
 
+    // Update sum and sum-of-squares using SIMD-optimized operations
     for (int ch = 0; ch < m_numChannels; ++ch)
     {
         auto* sumData = m_sumBuffer.getWritePointer (ch);
-        // TODO: Use SIMD
-        //m_sumBuffer.addFrom (ch, 0, buffer, ch, 0, m_numSamples);
         auto* sumSquaresData = m_sumSquaresBuffer.getWritePointer (ch);
         auto* inputData = buffer.getReadPointer (ch);
 
+        // Use JUCE's SIMD-optimized operations
+        juce::FloatVectorOperations::add (sumData, inputData, m_numSamples);
+        
+        // For sum of squares, we need to square then add
         for (int i = 0; i < m_numSamples; ++i)
         {
             float sample = inputData[i];
-            sumData[i] += sample;
             sumSquaresData[i] += sample * sample;
         }
     }
 
     ++m_numTrials;
+    
+    // Update the cached running average
+    updateRunningAverage();
 }
 AudioBuffer<float> MultiChannelAverageBuffer::getAverage() const
 {
-    AudioBuffer<float> outputBuffer;
+    // Simply return a copy of the cached average buffer
     if (m_numTrials == 0)
     {
+        AudioBuffer<float> outputBuffer;
         outputBuffer.clear();
         return outputBuffer;
     }
-
-    outputBuffer.setSize (m_numChannels, m_numSamples, false, false, true);
-
-    for (int ch = 0; ch < m_numChannels; ++ch)
-    {
-        auto* sumData = m_sumBuffer.getReadPointer (ch);
-        auto* outputData = outputBuffer.getWritePointer (ch);
-
-        for (int i = 0; i < m_numSamples; ++i)
-        {
-            outputData[i] = sumData[i] / static_cast<float> (m_numTrials);
-        }
-    }
-    return outputBuffer;
+    
+    // Return a copy of the cached average
+    return AudioBuffer<float> (m_averageBuffer);
 }
 AudioBuffer<float> MultiChannelAverageBuffer::getStandardDeviation() const
 {
@@ -293,6 +291,7 @@ void MultiChannelAverageBuffer::resetTrials()
 {
     m_sumBuffer.clear();
     m_sumSquaresBuffer.clear();
+    m_averageBuffer.clear();
     m_numTrials = 0;
 }
 int MultiChannelAverageBuffer::getNumTrials() const { return m_numTrials; }
@@ -305,4 +304,25 @@ int MultiChannelAverageBuffer::getNumSamples() const
 {
     assert (m_sumBuffer.getNumChannels() == m_sumSquaresBuffer.getNumChannels());
     return m_sumBuffer.getNumSamples();
+}
+
+void MultiChannelAverageBuffer::updateRunningAverage()
+{
+    if (m_numTrials == 0)
+    {
+        m_averageBuffer.clear();
+        return;
+    }
+    
+    const float invTrials = 1.0f / static_cast<float> (m_numTrials);
+    
+    // Use JUCE's SIMD-optimized multiply for each channel
+    for (int ch = 0; ch < m_numChannels; ++ch)
+    {
+        juce::FloatVectorOperations::multiply (
+            m_averageBuffer.getWritePointer (ch),
+            m_sumBuffer.getReadPointer (ch),
+            invTrials,
+            m_numSamples);
+    }
 }

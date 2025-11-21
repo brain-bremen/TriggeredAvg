@@ -103,15 +103,19 @@ public:
         m_numSamples = nSamples;
         m_sumBuffer.setSize (nChannels, nSamples);
         m_sumSquaresBuffer.setSize (nChannels, nSamples);
+        m_averageBuffer.setSize (nChannels, nSamples);
         resetTrials();
     }
 
 private:
     juce::AudioBuffer<float> m_sumBuffer;
     juce::AudioBuffer<float> m_sumSquaresBuffer;
+    juce::AudioBuffer<float> m_averageBuffer;  // Cached running average
     int m_numTrials = 0;
     int m_numChannels;
     int m_numSamples;
+
+    void updateRunningAverage();
 };
 
 } // namespace TriggeredAverage

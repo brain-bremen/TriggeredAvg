@@ -88,7 +88,7 @@ void SinglePlotPanel::resized()
         panelWidthPx = labelOffset - 10;
 
     panelHeightPx = (getHeight() - 10);
-    
+
     // Invalidate cache when size changes
     if (cachedPanelWidth != panelWidthPx)
     {
@@ -130,11 +130,13 @@ void SinglePlotPanel::resized()
             conditionLabel->setBounds (labelOffset, 49 + 18 * overlayIndex, 150, 15);
         }
     }
+
+    trialCounter->setBounds (labelOffset, 85, 150, 20);  // Add this line
 }
 
-void SinglePlotPanel::clear() 
-{ 
-    numTrials = 0; 
+void SinglePlotPanel::clear()
+{
+    numTrials = 0;
     pathNeedsUpdate = true;
     cachedNumTrials = -1;
 }
@@ -197,9 +199,14 @@ void SinglePlotPanel::setOverlayIndex (int index)
     resized();
 }
 
-void SinglePlotPanel::update() 
-{ 
-    numTrials++; 
+void SinglePlotPanel::update()
+{
+    numTrials++;
+    pathNeedsUpdate = true;
+}
+
+void SinglePlotPanel::invalidateCache()
+{
     pathNeedsUpdate = true;
 }
 
@@ -216,15 +223,13 @@ void SinglePlotPanel::paint (Graphics& g)
     {
         // Check if we need to update the cached path
         int currentNumTrials = m_averageBuffer->getNumTrials();
-        bool needsUpdate = pathNeedsUpdate 
-                          || (currentNumTrials != cachedNumTrials)
-                          || cachedAveragePath.isEmpty();
-        
+        bool needsUpdate =
+            pathNeedsUpdate || (currentNumTrials != cachedNumTrials) || cachedAveragePath.isEmpty();
+
+        AudioBuffer<float> avgBuffer;
         if (needsUpdate)
         {
             PerformanceTimer updateTimer ("update cached path", 5.0);
-            
-            AudioBuffer<float> avgBuffer;
 
             {
                 PerformanceTimer avgTimer ("getAverage()", 5.0); // Only log if > 5ms
@@ -233,12 +238,13 @@ void SinglePlotPanel::paint (Graphics& g)
 
             auto nSamples = avgBuffer.getNumSamples();
             auto nChannels = avgBuffer.getNumChannels();
+            auto trialCounterString = String (m_averageBuffer->getNumTrials());
+            trialCounter->setText (trialCounterString, dontSendNotification);
 
             if (avgBuffer.getNumSamples() > 0 && avgBuffer.getNumChannels() > 0)
             {
                 const int numSamples = avgBuffer.getNumSamples();
-                const float* channelData =
-                    avgBuffer.getReadPointer (channelIndexInAverageBuffer);
+                const float* channelData = avgBuffer.getReadPointer (channelIndexInAverageBuffer);
 
                 // Calculate min/max for overall scaling
                 float minVal = channelData[0];
@@ -255,10 +261,10 @@ void SinglePlotPanel::paint (Graphics& g)
 
                 // Downsample to pixel resolution
                 const int numPixels = panelWidthPx;
-                const int samplesPerPixel = std::max(1, numSamples / numPixels);
-                
+                const int samplesPerPixel = std::max (1, numSamples / numPixels);
+
                 cachedAveragePath.clear();
-                
+
                 if (samplesPerPixel <= 1)
                 {
                     // No downsampling needed - fewer samples than pixels
@@ -281,56 +287,56 @@ void SinglePlotPanel::paint (Graphics& g)
                     for (int pixelIndex = 0; pixelIndex < numPixels; ++pixelIndex)
                     {
                         int sampleStart = pixelIndex * samplesPerPixel;
-                        int sampleEnd = std::min(sampleStart + samplesPerPixel, numSamples);
-                        
+                        int sampleEnd = std::min (sampleStart + samplesPerPixel, numSamples);
+
                         // Find min and max within this pixel's sample range
                         float pixelMin = channelData[sampleStart];
                         float pixelMax = channelData[sampleStart];
-                        
+
                         for (int i = sampleStart + 1; i < sampleEnd; ++i)
                         {
-                            pixelMin = std::min(pixelMin, channelData[i]);
-                            pixelMax = std::max(pixelMax, channelData[i]);
+                            pixelMin = std::min (pixelMin, channelData[i]);
+                            pixelMax = std::max (pixelMax, channelData[i]);
                         }
-                        
-                        float x = static_cast<float>(pixelIndex);
-                        
+
+                        float x = static_cast<float> (pixelIndex);
+
                         // Draw vertical line from min to max for this pixel
-                        float yMin = static_cast<float>(panelHeightPx) * (1.0f - (pixelMin - minVal) / range);
-                        float yMax = static_cast<float>(panelHeightPx) * (1.0f - (pixelMax - minVal) / range);
-                        
+                        float yMin = static_cast<float> (panelHeightPx)
+                                     * (1.0f - (pixelMin - minVal) / range);
+                        float yMax = static_cast<float> (panelHeightPx)
+                                     * (1.0f - (pixelMax - minVal) / range);
+
                         if (pixelIndex == 0)
                         {
-                            cachedAveragePath.startNewSubPath(x, yMin);
+                            cachedAveragePath.startNewSubPath (x, yMin);
                         }
                         else
                         {
-                            cachedAveragePath.lineTo(x, yMin);
+                            cachedAveragePath.lineTo (x, yMin);
                         }
-                        
+
                         // Draw to max if there's a range in this pixel
-                        if (std::abs(yMax - yMin) > 0.5f)
+                        if (std::abs (yMax - yMin) > 0.5f)
                         {
-                            cachedAveragePath.lineTo(x, yMax);
+                            cachedAveragePath.lineTo (x, yMax);
                         }
                     }
                 }
-                
+
                 cachedNumTrials = currentNumTrials;
                 pathNeedsUpdate = false;
             }
         }
-        
+
         // Draw the cached path (fast!)
-        if (!cachedAveragePath.isEmpty())
+        if (! cachedAveragePath.isEmpty())
         {
             g.setColour (baseColour);
-            g.strokePath (cachedAveragePath, PathStrokeType (2.0f));
+            g.strokePath (cachedAveragePath, PathStrokeType (1.0f));
         }
     }
 
-    auto trialCounterString = String (numTrials);
-    trialCounter->setText (trialCounterString, dontSendNotification);
     g.setColour (Colours::white);
 
     // t = 0

@@ -195,6 +195,9 @@ TriggeredAvgCanvas::TriggeredAvgCanvas (TriggeredAvgNode* processor_)
     m_optionsBar = std::make_unique<OptionsBar> (this, m_grid.get(), m_timeAxis.get());
     m_optionsBarHolder->setViewedComponent (m_optionsBar.get(), false);
     addAndMakeVisible (m_optionsBarHolder.get());
+    
+    // Start timer for regular display updates (60 Hz)
+    Timer::startTimer (16);  // ~60 FPS
 }
 
 void TriggeredAvgCanvas::refreshState() { resized(); }

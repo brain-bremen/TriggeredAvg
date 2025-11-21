@@ -34,6 +34,7 @@ public:
     void mouseExit (const MouseEvent& event) override;
     void comboBoxChanged (ComboBox* comboBox) override;
     void update();
+    void invalidateCache();
 
     uint16 streamId;
     const ContinuousChannel* contChannel;
@@ -65,7 +66,6 @@ private:
     int overlayIndex = 0;
     bool overlayMode = false;
     bool waitingForWindowToClose;
-    size_t numTrials = 0;
     const double m_sampleRate;
     int channelIndexInAverageBuffer;
 
@@ -74,5 +74,6 @@ private:
     int cachedNumTrials = -1;
     int cachedPanelWidth = -1;
     bool pathNeedsUpdate = true;
+    int numTrials = 0;  // Track number of trials for this panel
 };
 } // namespace TriggeredAverage

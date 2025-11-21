@@ -317,7 +317,7 @@ void TriggeredAvgNode::handleTTLEvent (TTLEventPtr event)
 
 void TriggeredAvgNode::handleAsyncUpdate()
 {
-    // TODO: handle redrawring on message thread (here)
+    // Async update triggered - canvas will refresh on timer
     int tst = 0;
     m_canvas->refresh();
 }
