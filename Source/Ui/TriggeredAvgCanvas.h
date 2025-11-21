@@ -45,9 +45,6 @@ class OptionsBar : public Component, public Button::Listener, public ComboBox::L
 {
 public:
     OptionsBar (TriggeredAvgCanvas*, GridDisplay*, TimeAxis*);
-    OptionsBar() = delete;
-    OptionsBar (const OptionsBar&) = delete;
-    OptionsBar& operator= (const OptionsBar&) = delete;
     ~OptionsBar() override = default;
 
     void buttonClicked (Button* button) override;
@@ -57,22 +54,34 @@ public:
     void saveCustomParametersToXml (XmlElement* xml) const;
     void loadCustomParametersFromXml (XmlElement* xml);
 
+    /** Updates Y-axis limits from the text editors */
+    void updateYLimits();
+
 private:
+    GridDisplay* display;
+    TriggeredAvgCanvas* canvas;
+    TimeAxis* timescale;
+
     std::unique_ptr<UtilityButton> clearButton;
     std::unique_ptr<UtilityButton> saveButton;
-
     std::unique_ptr<ComboBox> plotTypeSelector;
-
     std::unique_ptr<ComboBox> columnNumberSelector;
     std::unique_ptr<ComboBox> rowHeightSelector;
     std::unique_ptr<UtilityButton> overlayButton;
 
-    GridDisplay* display;
-    TriggeredAvgCanvas* canvas;
-    TimeAxis* timescale;
+    // Y-axis limit controls
+    std::unique_ptr<UtilityButton> yLimitsToggle;
+    std::unique_ptr<Label> yMinLabel;
+    std::unique_ptr<Label> yMaxLabel;
+    std::unique_ptr<TextEditor> yMinEditor;
+    std::unique_ptr<TextEditor> yMaxEditor;
+
+    bool useCustomYLimits = false;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OptionsBar)
 };
 
-class TriggeredAvgCanvas : public Visualizer, public Timer
+class TriggeredAvgCanvas : public Visualizer
 {
 public:
     TriggeredAvgCanvas (TriggeredAvgNode* processor);

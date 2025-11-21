@@ -36,6 +36,21 @@ public:
     void update();
     void invalidateCache();
 
+    /** Sets custom y-axis limits for the plot */
+    void setYLimits (float minY, float maxY);
+    
+    /** Returns the current minimum y-axis limit */
+    float getYMin() const { return yMin; }
+    
+    /** Returns the current maximum y-axis limit */
+    float getYMax() const { return yMax; }
+    
+    /** Resets to auto-scaling mode (based on data min/max) */
+    void resetYLimits();
+    
+    /** Returns true if using custom y-axis limits, false if auto-scaling */
+    bool hasCustomYLimits() const { return useCustomYLimits; }
+
     uint16 streamId;
     const ContinuousChannel* contChannel;
     DynamicObject getInfo() const;
@@ -75,5 +90,10 @@ private:
     int cachedPanelWidth = -1;
     bool pathNeedsUpdate = true;
     int numTrials = 0;  // Track number of trials for this panel
+    
+    // Y-axis limits
+    bool useCustomYLimits = false;
+    float yMin = 0.0f;
+    float yMax = 1.0f;
 };
 } // namespace TriggeredAverage

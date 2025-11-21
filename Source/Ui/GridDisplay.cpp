@@ -174,6 +174,48 @@ void TriggeredAverage::GridDisplay::clearPanels()
 
 }
 
+void TriggeredAverage::GridDisplay::setYLimits (float minY, float maxY)
+{
+    for (auto panel : panels)
+    {
+        panel->setYLimits (minY, maxY);
+    }
+}
+
+void TriggeredAverage::GridDisplay::resetYLimits()
+{
+    for (auto panel : panels)
+    {
+        panel->resetYLimits();
+    }
+}
+
+void TriggeredAverage::GridDisplay::setYLimitsForSource (const TriggerSource* source, float minY, float maxY)
+{
+    if (triggerSourceToPanelMap.find (source) != triggerSourceToPanelMap.end())
+    {
+        Array<SinglePlotPanel*> plotPanels = triggerSourceToPanelMap[source];
+        
+        for (auto panel : plotPanels)
+        {
+            panel->setYLimits (minY, maxY);
+        }
+    }
+}
+
+void TriggeredAverage::GridDisplay::setYLimitsForChannel (const ContinuousChannel* channel, float minY, float maxY)
+{
+    if (contChannelToPanelMap.find (channel) != contChannelToPanelMap.end())
+    {
+        Array<SinglePlotPanel*> plotPanels = contChannelToPanelMap[channel];
+        
+        for (auto panel : plotPanels)
+        {
+            panel->setYLimits (minY, maxY);
+        }
+    }
+}
+
 DynamicObject TriggeredAverage::GridDisplay::getInfo()
 {
     DynamicObject output;

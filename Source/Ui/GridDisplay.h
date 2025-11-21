@@ -38,6 +38,18 @@ public:
     int getDesiredHeight() const;
     void clearPanels();
 
+    /** Sets custom y-axis limits for all panels */
+    void setYLimits (float minY, float maxY);
+    
+    /** Resets all panels to auto-scaling mode */
+    void resetYLimits();
+    
+    /** Sets custom y-axis limits for panels associated with a specific trigger source */
+    void setYLimitsForSource (const TriggerSource* source, float minY, float maxY);
+    
+    /** Sets custom y-axis limits for panels associated with a specific channel */
+    void setYLimitsForChannel (const ContinuousChannel* channel, float minY, float maxY);
+
     DynamicObject getInfo();
 
 private:

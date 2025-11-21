@@ -141,6 +141,28 @@ void SinglePlotPanel::clear()
     cachedNumTrials = -1;
 }
 
+void SinglePlotPanel::setYLimits (float minY, float maxY)
+{
+    if (minY >= maxY)
+    {
+        // Invalid range, ignore
+        return;
+    }
+    
+    yMin = minY;
+    yMax = maxY;
+    useCustomYLimits = true;
+    pathNeedsUpdate = true;
+    repaint();
+}
+
+void SinglePlotPanel::resetYLimits()
+{
+    useCustomYLimits = false;
+    pathNeedsUpdate = true;
+    repaint();
+}
+
 void SinglePlotPanel::setWindowSizeMs (float pre, float post)
 {
     pre_ms = pre;
@@ -246,13 +268,25 @@ void SinglePlotPanel::paint (Graphics& g)
                 const int numSamples = avgBuffer.getNumSamples();
                 const float* channelData = avgBuffer.getReadPointer (channelIndexInAverageBuffer);
 
-                // Calculate min/max for overall scaling
-                float minVal = channelData[0];
-                float maxVal = channelData[0];
-                for (int i = 1; i < numSamples; ++i)
+                // Calculate min/max for scaling
+                float minVal, maxVal;
+                
+                if (useCustomYLimits)
                 {
-                    minVal = std::min (minVal, channelData[i]);
-                    maxVal = std::max (maxVal, channelData[i]);
+                    // Use custom y-axis limits
+                    minVal = yMin;
+                    maxVal = yMax;
+                }
+                else
+                {
+                    // Auto-scale based on data
+                    minVal = channelData[0];
+                    maxVal = channelData[0];
+                    for (int i = 1; i < numSamples; ++i)
+                    {
+                        minVal = std::min (minVal, channelData[i]);
+                        maxVal = std::max (maxVal, channelData[i]);
+                    }
                 }
 
                 float range = maxVal - minVal;
@@ -272,7 +306,15 @@ void SinglePlotPanel::paint (Graphics& g)
                     {
                         float x = (static_cast<float> (i) / static_cast<float> (numSamples - 1))
                                   * static_cast<float> (panelWidthPx);
-                        float normalizedValue = (channelData[i] - minVal) / range;
+                        
+                        // Clamp value to range if using custom limits
+                        float value = channelData[i];
+                        if (useCustomYLimits)
+                        {
+                            value = std::max (minVal, std::min (maxVal, value));
+                        }
+                        
+                        float normalizedValue = (value - minVal) / range;
                         float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
 
                         if (i == 0)
@@ -297,6 +339,13 @@ void SinglePlotPanel::paint (Graphics& g)
                         {
                             pixelMin = std::min (pixelMin, channelData[i]);
                             pixelMax = std::max (pixelMax, channelData[i]);
+                        }
+                        
+                        // Clamp to range if using custom limits
+                        if (useCustomYLimits)
+                        {
+                            pixelMin = std::max (minVal, std::min (maxVal, pixelMin));
+                            pixelMax = std::max (minVal, std::min (maxVal, pixelMax));
                         }
 
                         float x = static_cast<float> (pixelIndex);

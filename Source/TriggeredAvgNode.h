@@ -48,6 +48,9 @@ namespace ParameterNames
     constexpr auto max_trials = "max_trials";
     constexpr auto trigger_line = "trigger_line";
     constexpr auto trigger_type = "trigger_type";
+    constexpr auto use_custom_y_limits = "use_custom_y_limits";
+    constexpr auto y_min = "y_min";
+    constexpr auto y_max = "y_max";
 
 } // namespace ParameterNames
 

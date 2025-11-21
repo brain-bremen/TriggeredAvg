@@ -51,6 +51,39 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     overlayButton->addListener (this);
     overlayButton->setClickingTogglesState (true);
     addAndMakeVisible (overlayButton.get());
+    
+    // Y-axis limit controls
+    yLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
+    yLimitsToggle->setFont (FontOptions (12.0f));
+    yLimitsToggle->addListener (this);
+    yLimitsToggle->setClickingTogglesState (true);
+    addAndMakeVisible (yLimitsToggle.get());
+    
+    yMinLabel = std::make_unique<Label> ("Y Min Label", "Min:");
+    yMinLabel->setFont (FontOptions (12.0f));
+    yMinLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (yMinLabel.get());
+    
+    yMaxLabel = std::make_unique<Label> ("Y Max Label", "Max:");
+    yMaxLabel->setFont (FontOptions (12.0f));
+    yMaxLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (yMaxLabel.get());
+    
+    yMinEditor = std::make_unique<TextEditor> ("Y Min");
+    yMinEditor->setText ("-100.0");
+    yMinEditor->setFont (FontOptions (12.0f));
+    yMinEditor->setEnabled (false);
+    yMinEditor->onReturnKey = [this]() { updateYLimits(); };
+    yMinEditor->onFocusLost = [this]() { updateYLimits(); };
+    addAndMakeVisible (yMinEditor.get());
+    
+    yMaxEditor = std::make_unique<TextEditor> ("Y Max");
+    yMaxEditor->setText ("100.0");
+    yMaxEditor->setFont (FontOptions (12.0f));
+    yMaxEditor->setEnabled (false);
+    yMaxEditor->onReturnKey = [this]() { updateYLimits(); };
+    yMaxEditor->onFocusLost = [this]() { updateYLimits(); };
+    addAndMakeVisible (yMaxEditor.get());
 }
 
 void OptionsBar::buttonClicked (Button* button)
@@ -70,6 +103,34 @@ void OptionsBar::buttonClicked (Button* button)
             overlayButton->setLabel ("OFF");
 
         canvas->resized();
+    }
+    else if (button == yLimitsToggle.get())
+    {
+        useCustomYLimits = button->getToggleState();
+        
+        if (useCustomYLimits)
+        {
+            yLimitsToggle->setLabel ("MANUAL");
+            yMinEditor->setEnabled (true);
+            yMaxEditor->setEnabled (true);
+            updateYLimits();
+        }
+        else
+        {
+            yLimitsToggle->setLabel ("AUTO");
+            yMinEditor->setEnabled (false);
+            yMaxEditor->setEnabled (false);
+            display->resetYLimits();
+        }
+        
+        // Notify the processor of the change
+        if (auto* processor = canvas->getProcessor())
+        {
+            if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
+            {
+                triggeredAvgNode->getParameter (ParameterNames::use_custom_y_limits)->setNextValue (useCustomYLimits ? 1.0f : 0.0f, false);
+            }
+        }
     }
     else if (button == saveButton.get())
     {
@@ -137,6 +198,13 @@ void OptionsBar::resized()
     columnNumberSelector->setBounds (200, verticalOffset, 50, 25);
 
     overlayButton->setBounds (340, verticalOffset, 35, 25);
+    
+    // Y-axis limit controls - positioned to the right of the plot type selector
+    yLimitsToggle->setBounds (610, verticalOffset, 65, 25);
+    yMinLabel->setBounds (685, verticalOffset, 35, 25);
+    yMinEditor->setBounds (720, verticalOffset, 60, 25);
+    yMaxLabel->setBounds (790, verticalOffset, 35, 25);
+    yMaxEditor->setBounds (825, verticalOffset, 60, 25);
 }
 
 void OptionsBar::paint (Graphics& g)
@@ -154,6 +222,38 @@ void OptionsBar::paint (Graphics& g)
     g.drawText ("Conditions", 240, verticalOffset + 15, 93, 15, Justification::centredRight, false);
     g.drawText ("Plot", 390, verticalOffset, 43, 15, Justification::centredRight, false);
     g.drawText ("Type", 390, verticalOffset + 15, 43, 15, Justification::centredRight, false);
+    g.drawText ("Y-Axis", 600, verticalOffset, 70, 15, Justification::centred, false);
+    g.drawText ("Limits", 600, verticalOffset + 15, 70, 15, Justification::centred, false);
+}
+
+void OptionsBar::updateYLimits()
+{
+    if (!useCustomYLimits)
+        return;
+        
+    float minY = yMinEditor->getText().getFloatValue();
+    float maxY = yMaxEditor->getText().getFloatValue();
+    
+    if (minY >= maxY)
+    {
+        // Invalid range - reset to defaults
+        yMinEditor->setText ("-100.0");
+        yMaxEditor->setText ("100.0");
+        minY = -100.0f;
+        maxY = 100.0f;
+    }
+    
+    display->setYLimits (minY, maxY);
+    
+    // Notify the processor of the changes
+    if (auto* processor = canvas->getProcessor())
+    {
+        if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
+        {
+            triggeredAvgNode->getParameter (ParameterNames::y_min)->setNextValue (minY, false);
+            triggeredAvgNode->getParameter (ParameterNames::y_max)->setNextValue (maxY, false);
+        }
+    }
 }
 
 void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
@@ -162,6 +262,14 @@ void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
     xml->setAttribute ("num_cols", columnNumberSelector->getSelectedId());
     xml->setAttribute ("row_height", rowHeightSelector->getSelectedId());
     xml->setAttribute ("overlay", overlayButton->getToggleState());
+    
+    // Save Y-axis limit parameters
+    xml->setAttribute ("use_custom_y_limits", useCustomYLimits);
+    if (useCustomYLimits)
+    {
+        xml->setAttribute ("y_min", yMinEditor->getText().getFloatValue());
+        xml->setAttribute ("y_max", yMaxEditor->getText().getFloatValue());
+    }
 }
 
 void OptionsBar::loadCustomParametersFromXml (XmlElement* xml)
@@ -170,6 +278,24 @@ void OptionsBar::loadCustomParametersFromXml (XmlElement* xml)
     rowHeightSelector->setSelectedId (xml->getIntAttribute ("row_height", 150), sendNotification);
     overlayButton->setToggleState (xml->getBoolAttribute ("overlay", false), sendNotification);
     plotTypeSelector->setSelectedId (xml->getIntAttribute ("plot_type", 1), sendNotification);
+    
+    // Load Y-axis limit parameters
+    bool customLimits = xml->getBoolAttribute ("use_custom_y_limits", false);
+    
+    if (customLimits)
+    {
+        float minY = (float) xml->getDoubleAttribute ("y_min", -100.0);
+        float maxY = (float) xml->getDoubleAttribute ("y_max", 100.0);
+        
+        yMinEditor->setText (String (minY));
+        yMaxEditor->setText (String (maxY));
+        
+        yLimitsToggle->setToggleState (true, sendNotification);
+    }
+    else
+    {
+        yLimitsToggle->setToggleState (false, sendNotification);
+    }
 }
 
 TriggeredAvgCanvas::TriggeredAvgCanvas (TriggeredAvgNode* processor_)
@@ -197,7 +323,8 @@ TriggeredAvgCanvas::TriggeredAvgCanvas (TriggeredAvgNode* processor_)
     addAndMakeVisible (m_optionsBarHolder.get());
     
     // Start timer for regular display updates (60 Hz)
-    Timer::startTimer (16);  // ~60 FPS
+    // Note: Visualizer already inherits from Timer, so we use the inherited startTimer
+    startTimer (16);  // ~60 FPS
 }
 
 void TriggeredAvgCanvas::refreshState() { resized(); }

@@ -85,6 +85,32 @@ TriggeredAvgNode::TriggeredAvgNode()
                      1,
                      3);
 
+    addBooleanParameter (Parameter::PROCESSOR_SCOPE,
+                         ParameterNames::use_custom_y_limits,
+                         "Use Custom Y Limits",
+                         "Enable custom Y-axis limits instead of auto-scaling",
+                         false);
+
+    addFloatParameter (Parameter::PROCESSOR_SCOPE,
+                       ParameterNames::y_min,
+                       "Y Min",
+                       "Minimum Y-axis limit",
+                       "",
+                       -100.0f,
+                       -10000.0f,
+                       10000.0f,
+                       1.0f);
+
+    addFloatParameter (Parameter::PROCESSOR_SCOPE,
+                       ParameterNames::y_max,
+                       "Y Max",
+                       "Maximum Y-axis limit",
+                       "",
+                       100.0f,
+                       -10000.0f,
+                       10000.0f,
+                       1.0f);
+
     // Create a default trigger source for any line
     m_triggerSources.addTriggerSource (-1, TriggerType::TTL_TRIGGER);
 }
@@ -143,6 +169,25 @@ void TriggeredAvgNode::parameterValueChanged (Parameter* param)
         if (m_canvas)
         {
             m_canvas->setWindowSizeMs (getPreWindowSizeMs(), getPostWindowSizeMs());
+            triggerAsyncUpdate();
+        }
+    }
+    else if (param->getName().equalsIgnoreCase (use_custom_y_limits))
+    {
+        if (m_canvas)
+        {
+            // Update canvas based on the toggle state
+            float value = param->getValue();
+            bool useCustomLimits = (value > 0.5f);
+            // The canvas will handle updating the UI and applying/resetting limits
+            triggerAsyncUpdate();
+        }
+    }
+    else if (param->getName().equalsIgnoreCase (y_min) || param->getName().equalsIgnoreCase (y_max))
+    {
+        if (m_canvas)
+        {
+            // Update canvas with new Y-axis limits
             triggerAsyncUpdate();
         }
     }
