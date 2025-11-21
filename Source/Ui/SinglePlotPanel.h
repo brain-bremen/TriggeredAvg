@@ -68,5 +68,11 @@ private:
     size_t numTrials = 0;
     const double m_sampleRate;
     int channelIndexInAverageBuffer;
+
+    // Cache for downsampled path
+    Path cachedAveragePath;
+    int cachedNumTrials = -1;
+    int cachedPanelWidth = -1;
+    bool pathNeedsUpdate = true;
 };
 } // namespace TriggeredAverage
