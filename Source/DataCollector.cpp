@@ -64,35 +64,59 @@ void DataCollector::run()
     {
         if (bool wasTriggered = newTriggerEvent.wait (100))
         {
-            const ScopedLock lock (triggerQueueLock);
             bool averageBuffersWereUpdated = false;
-            int iRetry = maximumNumberOfRetries;
-            while (! captureRequestQueue.empty())
+
+            while (! threadShouldExit())
             {
-                switch (processCaptureRequest (captureRequestQueue.front()))
+                // Get next request from queue (lock held briefly)
+                CaptureRequest currentRequest;
+                bool hasRequest = false;
+
                 {
-                    case RingBufferReadResult::Success:
-                    case RingBufferReadResult::DataInRingBufferTooOld:
-                        averageBuffersWereUpdated = true;
+                    const ScopedLock lock (triggerQueueLock);
+                    if (! captureRequestQueue.empty())
+                    {
+                        currentRequest = captureRequestQueue.front();
                         captureRequestQueue.pop_front();
-                        break;
-                    case RingBufferReadResult::NotEnoughNewData:
-                        if (iRetry > 0)
-                        {
-                            wait (retryIntervalMs);
-                            iRetry--;
-                        }
-                        else
-                        {
-                            captureRequestQueue.pop_front();
-                        }
-                        break;
-                    case RingBufferReadResult::InvalidParameters:
-                    case RingBufferReadResult::UnknownError:
-                        assert (false);
-                        break;
+                        hasRequest = true;
+                    }
                 }
+
+                if (! hasRequest)
+                    break;
+
+                // Process request without holding the lock
+                int iRetry = 0;
+                RingBufferReadResult result;
+
+                do
+                {
+                    result = processCaptureRequest (currentRequest);
+
+                    switch (result)
+                    {
+                        case RingBufferReadResult::Success:
+                        case RingBufferReadResult::DataInRingBufferTooOld:
+                            averageBuffersWereUpdated = true;
+                            break;
+
+                        case RingBufferReadResult::NotEnoughNewData:
+                            if (iRetry < maximumNumberOfRetries)
+                            {
+                                wait (retryIntervalMs);
+                                iRetry++;
+                            }
+                            break;
+
+                        case RingBufferReadResult::InvalidParameters:
+                        case RingBufferReadResult::UnknownError:
+                            assert (false);
+                            break;
+                    }
+                } while (result == RingBufferReadResult::NotEnoughNewData
+                         && iRetry < maximumNumberOfRetries && ! threadShouldExit());
             }
+
             if (averageBuffersWereUpdated)
             {
                 // notify the processor that the data has been updated
@@ -108,11 +132,19 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
 {
     auto result = ringBuffer->readAroundSample (
         request.triggerSample, request.preSamples, request.postSamples, m_collectBuffer);
-    if (result == RingBufferReadResult::Success)
+    
+    if (result != RingBufferReadResult::Success)
+        return result;
+
+    // First, get buffer pointer and check size with minimal lock time
+    MultiChannelAverageBuffer* avgBuffer = nullptr;
+    bool needsResize = false;
+    
     {
-        auto* avgBuffer =
-            m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
-        if (! avgBuffer)
+        auto lock = m_datastore->GetLock();
+        avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
+        
+        if (!avgBuffer)
         {
             m_datastore->ResetAndResizeAverageBufferForTriggerSource (
                 request.triggerSource,
@@ -120,23 +152,37 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
                 m_collectBuffer.getNumSamples());
             avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
         }
-
+        
         jassert (avgBuffer);
-
+        
         if (m_collectBuffer.getNumChannels() != avgBuffer->getNumChannels()
             || m_collectBuffer.getNumSamples() != avgBuffer->getNumSamples())
         {
-            m_datastore->ResetAndResizeAverageBufferForTriggerSource (
-                request.triggerSource,
-                m_collectBuffer.getNumChannels(),
-                m_collectBuffer.getNumSamples());
+            needsResize = true;
         }
+    } // Lock released here
+    
+    // Resize outside the critical section if needed
+    if (needsResize)
+    {
+        auto lock = m_datastore->GetLock();
+        m_datastore->ResetAndResizeAverageBufferForTriggerSource (
+            request.triggerSource,
+            m_collectBuffer.getNumChannels(),
+            m_collectBuffer.getNumSamples());
+    }
+    
+    // Now add data with a separate, brief lock acquisition
+    {
+        auto lock = m_datastore->GetLock();
+        avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
+        jassert (avgBuffer);
         jassert (m_collectBuffer.getNumSamples() == avgBuffer->getNumSamples());
         jassert (m_collectBuffer.getNumChannels() == avgBuffer->getNumChannels());
-
-        m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource)
-            ->addDataToAverageFromBuffer (m_collectBuffer);
+        
+        avgBuffer->addDataToAverageFromBuffer (m_collectBuffer);
     }
+    
     return result;
 }
 MultiChannelAverageBuffer::MultiChannelAverageBuffer (int numChannels, int numSamples)
