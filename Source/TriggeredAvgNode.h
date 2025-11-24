@@ -64,7 +64,7 @@ public:
     AudioProcessorEditor* createEditor() override;
     void parameterValueChanged (Parameter* param) override;
     void process (AudioBuffer<float>& buffer) override;
-    void prepareToPlay (double sampleRate, int maximumExpectedSamplesPerBlock) override;
+    bool startAcquisition () override;
 
     // parameters
     int getMaxTrials() const { return (int) getParameter (ParameterNames::max_trials)->getValue(); }

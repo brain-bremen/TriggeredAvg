@@ -216,10 +216,10 @@ void TriggeredAvgNode::process (AudioBuffer<float>& buffer)
     checkForEvents (false);
 }
 
-void TriggeredAvgNode::prepareToPlay (double sampleRate, int maximumExpectedSamplesPerBlock)
+bool TriggeredAvgNode::startAcquisition ()
 {
-    GenericProcessor::prepareToPlay (sampleRate, maximumExpectedSamplesPerBlock);
     initializeThreads();
+    return m_threadsInitialized;
 }
 
 float TriggeredAvgNode::getPreWindowSizeMs() const
@@ -240,6 +240,7 @@ int TriggeredAvgNode::getNumberOfPostSamplesIncludingTrigger() const
 }
 int TriggeredAvgNode::getNumberOfSamples() const
 {
+    if (getNumDataStreams() == 0) return 0;
     const float sampleRate = getDataStreams()[m_dataStreamIndex]->getSampleRate();
     const int preSamples = static_cast<int> (sampleRate * (getPreWindowSizeMs() / 1000.0f));
     const int postSamples = static_cast<int> (sampleRate * (getPostWindowSizeMs() / 1000.0f));

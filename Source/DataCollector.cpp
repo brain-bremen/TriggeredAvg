@@ -58,8 +58,8 @@ void DataCollector::registerCaptureRequest (const CaptureRequest& request)
 
 void DataCollector::run()
 {
-    constexpr double retryIntervalMs = 50.0;
-    constexpr int maximumNumberOfRetries = 200;
+    constexpr double retryIntervalMs = 100.0;
+    constexpr int maximumNumberOfRetries = 500;
     while (! threadShouldExit())
     {
         if (bool wasTriggered = newTriggerEvent.wait (100))
@@ -87,34 +87,54 @@ void DataCollector::run()
 
                 // Process request without holding the lock
                 int iRetry = 0;
-                RingBufferReadResult result;
+                RingBufferReadResult result = RingBufferReadResult::UnknownError;
 
                 do
                 {
                     result = processCaptureRequest (currentRequest);
+                    assert (result != RingBufferReadResult::UnknownError);
 
                     switch (result)
                     {
                         case RingBufferReadResult::Success:
+                            averageBuffersWereUpdated = true;
+                            LOGD ("[TriggeredAvg] Capture Request succesfully processed ")
+                            break;
                         case RingBufferReadResult::DataInRingBufferTooOld:
                             averageBuffersWereUpdated = true;
+                            LOGD ("[TriggeredAvg] Catpure Request dicarded, data too old. ")
                             break;
 
                         case RingBufferReadResult::NotEnoughNewData:
                             if (iRetry < maximumNumberOfRetries)
                             {
+                                LOGD ("[TriggeredAvg] Capture Request retry ",
+                                      iRetry,
+                                      " - not enough data available yet, waiting ",
+                                      retryIntervalMs,
+                                      " ms.")
                                 wait (retryIntervalMs);
                                 iRetry++;
+                            }
+                            else
+                            {
+                                LOGD ("TriggeredAvg: Capture request discarded after ",
+                                      maximumNumberOfRetries,
+                                      " retries - not enough data available");
+                            result = RingBufferReadResult::Aborted;
                             }
                             break;
 
                         case RingBufferReadResult::InvalidParameters:
                         case RingBufferReadResult::UnknownError:
+                        case RingBufferReadResult::Aborted:
                             assert (false);
                             break;
                     }
                 } while (result == RingBufferReadResult::NotEnoughNewData
                          && iRetry < maximumNumberOfRetries && ! threadShouldExit());
+
+                assert (RingBufferReadResult::Success == result);
             }
 
             if (averageBuffersWereUpdated)
@@ -132,19 +152,21 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
 {
     auto result = ringBuffer->readAroundSample (
         request.triggerSample, request.preSamples, request.postSamples, m_collectBuffer);
-    
+    assert (result != RingBufferReadResult::UnknownError);
     if (result != RingBufferReadResult::Success)
+    {
         return result;
+    }
 
     // First, get buffer pointer and check size with minimal lock time
     MultiChannelAverageBuffer* avgBuffer = nullptr;
     bool needsResize = false;
-    
+
     {
         auto lock = m_datastore->GetLock();
         avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
-        
-        if (!avgBuffer)
+
+        if (! avgBuffer)
         {
             m_datastore->ResetAndResizeAverageBufferForTriggerSource (
                 request.triggerSource,
@@ -152,26 +174,25 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
                 m_collectBuffer.getNumSamples());
             avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
         }
-        
+
         jassert (avgBuffer);
-        
+
         if (m_collectBuffer.getNumChannels() != avgBuffer->getNumChannels()
             || m_collectBuffer.getNumSamples() != avgBuffer->getNumSamples())
         {
             needsResize = true;
         }
     } // Lock released here
-    
+
     // Resize outside the critical section if needed
     if (needsResize)
     {
         auto lock = m_datastore->GetLock();
-        m_datastore->ResetAndResizeAverageBufferForTriggerSource (
-            request.triggerSource,
-            m_collectBuffer.getNumChannels(),
-            m_collectBuffer.getNumSamples());
+        m_datastore->ResetAndResizeAverageBufferForTriggerSource (request.triggerSource,
+                                                                  m_collectBuffer.getNumChannels(),
+                                                                  m_collectBuffer.getNumSamples());
     }
-    
+
     // Now add data with a separate, brief lock acquisition
     {
         auto lock = m_datastore->GetLock();
@@ -179,10 +200,10 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
         jassert (avgBuffer);
         jassert (m_collectBuffer.getNumSamples() == avgBuffer->getNumSamples());
         jassert (m_collectBuffer.getNumChannels() == avgBuffer->getNumChannels());
-        
+
         avgBuffer->addDataToAverageFromBuffer (m_collectBuffer);
     }
-    
+
     return result;
 }
 MultiChannelAverageBuffer::MultiChannelAverageBuffer (int numChannels, int numSamples)
@@ -231,7 +252,7 @@ void MultiChannelAverageBuffer::addDataToAverageFromBuffer (const juce::AudioBuf
 
         // Use JUCE's SIMD-optimized operations
         juce::FloatVectorOperations::add (sumData, inputData, m_numSamples);
-        
+
         // For sum of squares, we need to square then add
         for (int i = 0; i < m_numSamples; ++i)
         {
@@ -241,7 +262,7 @@ void MultiChannelAverageBuffer::addDataToAverageFromBuffer (const juce::AudioBuf
     }
 
     ++m_numTrials;
-    
+
     // Update the cached running average
     updateRunningAverage();
 }
@@ -254,7 +275,7 @@ AudioBuffer<float> MultiChannelAverageBuffer::getAverage() const
         outputBuffer.clear();
         return outputBuffer;
     }
-    
+
     // Return a copy of the cached average
     return AudioBuffer<float> (m_averageBuffer);
 }
@@ -313,16 +334,15 @@ void MultiChannelAverageBuffer::updateRunningAverage()
         m_averageBuffer.clear();
         return;
     }
-    
+
     const float invTrials = 1.0f / static_cast<float> (m_numTrials);
-    
+
     // Use JUCE's SIMD-optimized multiply for each channel
     for (int ch = 0; ch < m_numChannels; ++ch)
     {
-        juce::FloatVectorOperations::multiply (
-            m_averageBuffer.getWritePointer (ch),
-            m_sumBuffer.getReadPointer (ch),
-            invTrials,
-            m_numSamples);
+        juce::FloatVectorOperations::multiply (m_averageBuffer.getWritePointer (ch),
+                                               m_sumBuffer.getReadPointer (ch),
+                                               invTrials,
+                                               m_numSamples);
     }
 }

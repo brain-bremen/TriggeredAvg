@@ -14,7 +14,8 @@ enum class RingBufferReadResult : std::int_fast8_t
     Success = 0,
     NotEnoughNewData = 1,
     DataInRingBufferTooOld = 2,
-    InvalidParameters = 3
+    InvalidParameters = 3,
+    Aborted = 4
 };
 
 class MultiChannelRingBuffer
