@@ -251,3 +251,44 @@ DynamicObject TriggeredAverage::GridDisplay::getInfo()
 
     return output;
 }
+
+void TriggeredAverage::GridDisplay::setShowIndividualTrials (bool show)
+{
+    // This method will be used to show/hide individual trials
+    // Currently, individual trial rendering is controlled by the panel itself
+    // We can extend this to have a global toggle if needed
+    for (auto panel : panels)
+    {
+        // Panel needs to implement show/hide trials
+        // For now, this is controlled by whether trial buffer is set
+    }
+}
+
+void TriggeredAverage::GridDisplay::setMaxTrialsToDisplay (int n)
+{
+    for (auto panel : panels)
+    {
+        panel->setMaxTrialsToDisplay (n);
+    }
+}
+
+void TriggeredAverage::GridDisplay::setTrialOpacity (float opacity)
+{
+    for (auto panel : panels)
+    {
+        panel->setTrialOpacity (opacity);
+    }
+}
+
+void TriggeredAverage::GridDisplay::setTrialBuffersForSource (const TriggerSource* source, const SingleTrialBuffer* trialBuffer)
+{
+    if (triggerSourceToPanelMap.find (source) != triggerSourceToPanelMap.end())
+    {
+        Array<SinglePlotPanel*> plotPanels = triggerSourceToPanelMap[source];
+        
+        for (auto panel : plotPanels)
+        {
+            panel->setTrialBuffer (trialBuffer);
+        }
+    }
+}

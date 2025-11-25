@@ -57,6 +57,18 @@ public:
     void setYLimitsForChannel (const ContinuousChannel* channel, float minY, float maxY);
 
     DynamicObject getInfo();
+    
+    /** Configures individual trial display settings for all panels */
+    void setShowIndividualTrials (bool show);
+    
+    /** Sets the maximum number of trials to display for all panels */
+    void setMaxTrialsToDisplay (int n);
+    
+    /** Sets the opacity for individual trial traces for all panels */
+    void setTrialOpacity (float opacity);
+    
+    /** Connects trial buffers to panels for a given trigger source */
+    void setTrialBuffersForSource (const TriggerSource* source, const class SingleTrialBuffer* trialBuffer);
 
 private:
     OwnedArray<SinglePlotPanel> panels;

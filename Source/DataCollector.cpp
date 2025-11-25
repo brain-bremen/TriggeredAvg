@@ -6,9 +6,113 @@
 
 using namespace TriggeredAverage;
 
-void DataStore::ResetAndResizeAverageBufferForTriggerSource (TriggerSource* source,
-                                                             int nChannels,
-                                                             int nSamples)
+// SingleTrialBuffer implementation
+void SingleTrialBuffer::addTrial (const AudioBuffer<float>& trial)
+{
+    // Initialize vector on first use or if resized
+    if (trials.size() != static_cast<size_t> (maxTrials))
+    {
+        trials.resize (maxTrials);
+        for (auto& t : trials)
+        {
+            if (t.getNumChannels() != trial.getNumChannels()
+                || t.getNumSamples() != trial.getNumSamples())
+            {
+                t.setSize (trial.getNumChannels(), trial.getNumSamples());
+            }
+        }
+    }
+
+    // Ensure the trial at writeIndex has the correct size
+    if (trials[writeIndex].getNumChannels() != trial.getNumChannels()
+        || trials[writeIndex].getNumSamples() != trial.getNumSamples())
+    {
+        trials[writeIndex].setSize (trial.getNumChannels(), trial.getNumSamples());
+    }
+
+    // Copy trial data into the circular buffer
+    for (int ch = 0; ch < trial.getNumChannels(); ++ch)
+    {
+        trials[writeIndex].copyFrom (ch, 0, trial, ch, 0, trial.getNumSamples());
+    }
+
+    // Update circular buffer indices
+    writeIndex = (writeIndex + 1) % maxTrials;
+    numStored = std::min (numStored + 1, maxTrials);
+}
+
+const AudioBuffer<float>& SingleTrialBuffer::getTrial (int index) const
+{
+    jassert (index >= 0 && index < numStored);
+
+    // Map logical index to physical index in circular buffer
+    // Most recent trial is at logical index (numStored - 1)
+    // Oldest trial starts at (writeIndex - numStored) in the circular buffer
+    int physicalIndex = (writeIndex - numStored + index + maxTrials) % maxTrials;
+    return trials[physicalIndex];
+}
+
+int SingleTrialBuffer::getNumStoredTrials() const { return numStored; }
+
+void SingleTrialBuffer::setMaxTrials (int n)
+{
+    int newMaxTrials = std::max (1, n);
+
+    if (newMaxTrials == maxTrials)
+        return;
+
+    // Save existing trials in order (oldest to newest)
+    std::vector<AudioBuffer<float>> oldTrials;
+    oldTrials.reserve (numStored);
+
+    for (int i = 0; i < numStored; ++i)
+    {
+        int physicalIndex = (writeIndex - numStored + i + maxTrials) % maxTrials;
+        oldTrials.push_back (trials[physicalIndex]);
+    }
+
+    // Resize and rebuild
+    maxTrials = newMaxTrials;
+    trials.clear();
+    trials.resize (maxTrials);
+    writeIndex = 0;
+    numStored = 0;
+
+    // Re-add trials (keep only the most recent maxTrials)
+    int startIndex = std::max (0, static_cast<int> (oldTrials.size()) - maxTrials);
+    for (int i = startIndex; i < static_cast<int> (oldTrials.size()); ++i)
+    {
+        addTrial (oldTrials[i]);
+    }
+}
+
+void SingleTrialBuffer::clear()
+{
+    writeIndex = 0;
+    numStored = 0;
+    for (auto& trial : trials)
+    {
+        trial.clear();
+    }
+}
+
+void SingleTrialBuffer::setSize (int nChannels, int nSamples)
+{
+    // Clear existing data and reinitialize with new size
+    trials.clear();
+    trials.resize (maxTrials);
+    for (auto& trial : trials)
+    {
+        trial.setSize (nChannels, nSamples, false, false, true);
+    }
+    writeIndex = 0;
+    numStored = 0;
+}
+
+// DataStore implementation
+void DataStore::ResetAndResizeBuffersForTriggerSource (TriggerSource* source,
+                                                       int nChannels,
+                                                       int nSamples)
 {
     std::scoped_lock<std::recursive_mutex> lock (m_mutex);
     if (! source)
@@ -21,6 +125,7 @@ void DataStore::ResetAndResizeAverageBufferForTriggerSource (TriggerSource* sour
     else
     {
         m_averageBuffers[source].setSize (nChannels, nSamples);
+        m_singleTrialBuffers[source].setSize (nChannels, nSamples);
     }
 }
 
@@ -32,6 +137,15 @@ void TriggeredAverage::DataStore::ResizeAllAverageBuffers (int nChannels, int nS
         buffer.setSize (nChannels, nSamples);
         if (clear)
             buffer.resetTrials();
+    }
+}
+
+void DataStore::setMaxTrialsToStore (int n)
+{
+    auto lock = GetLock();
+    for (auto& [source, trialBuffer] : m_singleTrialBuffers)
+    {
+        trialBuffer.setMaxTrials (n);
     }
 }
 
@@ -121,7 +235,7 @@ void DataCollector::run()
                                 LOGD ("TriggeredAvg: Capture request discarded after ",
                                       maximumNumberOfRetries,
                                       " retries - not enough data available");
-                            result = RingBufferReadResult::Aborted;
+                                result = RingBufferReadResult::Aborted;
                             }
                             break;
 
@@ -160,48 +274,67 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
 
     // First, get buffer pointer and check size with minimal lock time
     MultiChannelAverageBuffer* avgBuffer = nullptr;
+    SingleTrialBuffer* trialBuffer = nullptr;
     bool needsResize = false;
 
     {
         auto lock = m_datastore->GetLock();
         avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
+        trialBuffer = m_datastore->getRefToTrialBufferForTriggerSource (request.triggerSource);
 
         if (! avgBuffer)
         {
-            m_datastore->ResetAndResizeAverageBufferForTriggerSource (
-                request.triggerSource,
-                m_collectBuffer.getNumChannels(),
-                m_collectBuffer.getNumSamples());
+            m_datastore->ResetAndResizeBuffersForTriggerSource (request.triggerSource,
+                                                                m_collectBuffer.getNumChannels(),
+                                                                m_collectBuffer.getNumSamples());
             avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
         }
 
         jassert (avgBuffer);
+
+        if (! trialBuffer)
+        {
+            m_datastore->ResetAndResizeBuffersForTriggerSource (request.triggerSource,
+                                                                m_collectBuffer.getNumChannels(),
+                                                                m_collectBuffer.getNumSamples());
+            trialBuffer = m_datastore->getRefToTrialBufferForTriggerSource (request.triggerSource);
+        }
+
+        jassert (trialBuffer);
 
         if (m_collectBuffer.getNumChannels() != avgBuffer->getNumChannels()
             || m_collectBuffer.getNumSamples() != avgBuffer->getNumSamples())
         {
             needsResize = true;
         }
+
     } // Lock released here
 
     // Resize outside the critical section if needed
     if (needsResize)
     {
         auto lock = m_datastore->GetLock();
-        m_datastore->ResetAndResizeAverageBufferForTriggerSource (request.triggerSource,
-                                                                  m_collectBuffer.getNumChannels(),
-                                                                  m_collectBuffer.getNumSamples());
+        m_datastore->ResetAndResizeBuffersForTriggerSource (request.triggerSource,
+                                                            m_collectBuffer.getNumChannels(),
+                                                            m_collectBuffer.getNumSamples());
     }
 
     // Now add data with a separate, brief lock acquisition
     {
         auto lock = m_datastore->GetLock();
         avgBuffer = m_datastore->getRefToAverageBufferForTriggerSource (request.triggerSource);
+        trialBuffer = m_datastore->getRefToTrialBufferForTriggerSource (request.triggerSource);
+
         jassert (avgBuffer);
+        jassert (trialBuffer);
         jassert (m_collectBuffer.getNumSamples() == avgBuffer->getNumSamples());
         jassert (m_collectBuffer.getNumChannels() == avgBuffer->getNumChannels());
 
+        // Add to average buffer
         avgBuffer->addDataToAverageFromBuffer (m_collectBuffer);
+
+        // Add to trial buffer
+        trialBuffer->addTrial (m_collectBuffer);
     }
 
     return result;

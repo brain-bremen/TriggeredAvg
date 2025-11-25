@@ -85,6 +85,19 @@ private:
     std::unique_ptr<TextEditor> yMaxEditor;
 
     bool useCustomYLimits = false;
+    
+    // Individual trial display controls
+    std::unique_ptr<UtilityButton> showTrialsToggle;
+    std::unique_ptr<Label> numTrialsLabel;
+    std::unique_ptr<ComboBox> numTrialsSelector;
+    std::unique_ptr<Label> trialOpacityLabel;
+    std::unique_ptr<Slider> trialOpacitySlider;
+    
+    bool showTrials = false;
+    int maxTrialsToDisplay = 10;
+    float trialOpacity = 0.3f;
+    
+    void updateTrialDisplaySettings();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OptionsBar)
 };

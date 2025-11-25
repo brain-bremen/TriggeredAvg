@@ -5,6 +5,7 @@
 namespace TriggeredAverage
 {
 class MultiChannelAverageBuffer;
+class SingleTrialBuffer;
 enum class DisplayMode : std::uint8_t;
 class GridDisplay;
 class TriggerSource;
@@ -65,6 +66,15 @@ public:
     
     /** Returns true if using custom x-axis limits, false if auto-scaling */
     bool hasCustomXLimits() const { return useCustomXLimits; }
+    
+    /** Sets the trial buffer to use for individual trial plotting */
+    void setTrialBuffer (const SingleTrialBuffer* trialBuffer);
+    
+    /** Sets the maximum number of individual trials to display */
+    void setMaxTrialsToDisplay (int n);
+    
+    /** Sets the opacity for individual trial traces */
+    void setTrialOpacity (float opacity);
 
     uint16 streamId;
     const ContinuousChannel* contChannel;
@@ -91,8 +101,10 @@ private:
     TimeRange calculateTimeRange (int numSamples) const;
     void plotWithDirectMapping (const float* channelData, int numSamples, const DataRange& dataRange);
     void plotWithCustomXLimits (const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
+    void plotTrialToPath (Path& path, const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
     void drawZeroLine (Graphics& g) const;
     bool updateCachedPath();
+    bool updateCachedTrialPaths();
 
     std::unique_ptr<Label> infoLabel;
     std::unique_ptr<Label> channelLabel;
@@ -109,6 +121,7 @@ private:
     const TriggerSource* m_triggerSource;
     const GridDisplay* m_parentGrid;
     const MultiChannelAverageBuffer* m_averageBuffer;
+    const SingleTrialBuffer* m_trialBuffer = nullptr;
 
     float pre_ms;
     float post_ms;
@@ -127,6 +140,12 @@ private:
     int cachedNumTrials = -1;
     int cachedPanelWidth = -1;
     int numTrials = 0;
+    
+    // Individual trial rendering
+    Array<Path> cachedTrialPaths;
+    int cachedTrialCount = -1;
+    int maxTrialsToDisplay = 10;
+    float trialOpacity = 0.3f;
     
     // Y-axis limits
     bool useCustomYLimits = false;
