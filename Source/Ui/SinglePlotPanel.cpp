@@ -89,11 +89,10 @@ void SinglePlotPanel::resized()
 
     panelHeightPx = (getHeight() - 10);
 
-    // Invalidate cache when size changes
     if (cachedPanelWidth != panelWidthPx)
     {
-        pathNeedsUpdate = true;
         cachedPanelWidth = panelWidthPx;
+        updateCachedPath();
     }
 
     infoLabel->setBounds (labelOffset, 10, 150, 30);
@@ -131,35 +130,60 @@ void SinglePlotPanel::resized()
         }
     }
 
-    trialCounter->setBounds (labelOffset, 85, 150, 20);  // Add this line
+    trialCounter->setBounds (labelOffset, 85, 150, 20);
 }
 
 void SinglePlotPanel::clear()
 {
     numTrials = 0;
-    pathNeedsUpdate = true;
     cachedNumTrials = -1;
+    cachedAveragePath.clear();
+    repaint();
 }
 
 void SinglePlotPanel::setYLimits (float minY, float maxY)
 {
     if (minY >= maxY)
     {
-        // Invalid range, ignore
         return;
     }
     
     yMin = minY;
     yMax = maxY;
     useCustomYLimits = true;
-    pathNeedsUpdate = true;
+    cachedNumTrials = -1;
+    updateCachedPath();
     repaint();
 }
 
 void SinglePlotPanel::resetYLimits()
 {
     useCustomYLimits = false;
-    pathNeedsUpdate = true;
+    cachedNumTrials = -1;
+    updateCachedPath();
+    repaint();
+}
+
+void SinglePlotPanel::setXLimits (float minX, float maxX)
+{
+    if (minX >= maxX)
+    {
+        return;
+    }
+    
+    xMin = minX;
+    xMax = maxX;
+    useCustomXLimits = true;
+    cachedNumTrials = -1;
+    updateCachedPath();
+    repaint();
+}
+
+void SinglePlotPanel::resetXLimits()
+{
+    useCustomXLimits = false;
+    cachedNumTrials = -1;
+    updateCachedPath();
     repaint();
 }
 
@@ -167,6 +191,9 @@ void SinglePlotPanel::setWindowSizeMs (float pre, float post)
 {
     pre_ms = pre;
     post_ms = post;
+    cachedNumTrials = -1;
+    updateCachedPath();
+    repaint();
 }
 
 void SinglePlotPanel::setPlotType (TriggeredAverage::DisplayMode plotType)
@@ -224,173 +251,335 @@ void SinglePlotPanel::setOverlayIndex (int index)
 void SinglePlotPanel::update()
 {
     numTrials++;
-    pathNeedsUpdate = true;
+    updateCachedPath();
+    repaint();
 }
 
 void SinglePlotPanel::invalidateCache()
 {
-    pathNeedsUpdate = true;
+    updateCachedPath();
+    repaint();
+}
+
+SinglePlotPanel::DataRange SinglePlotPanel::calculateDataRange (const float* channelData, int numSamples)
+{
+    DataRange result;
+    
+    if (useCustomYLimits)
+    {
+        result.minVal = yMin;
+        result.maxVal = yMax;
+    }
+    else
+    {
+        result.minVal = channelData[0];
+        result.maxVal = channelData[0];
+        for (int i = 1; i < numSamples; ++i)
+        {
+            result.minVal = std::min (result.minVal, channelData[i]);
+            result.maxVal = std::max (result.maxVal, channelData[i]);
+        }
+    }
+    
+    result.range = result.maxVal - result.minVal;
+    if (result.range < 1e-6f)
+        result.range = 1.0f;
+    
+    return result;
+}
+
+SinglePlotPanel::TimeRange SinglePlotPanel::calculateTimeRange (int numSamples) const
+{
+    TimeRange result;
+    
+    result.totalTimeMs = pre_ms + post_ms;
+    result.timePerSample = result.totalTimeMs / (numSamples - 1);
+    
+    if (useCustomXLimits)
+    {
+        result.displayXMin = xMin;
+        result.displayXMax = xMax;
+    }
+    else
+    {
+        result.displayXMin = -pre_ms;
+        result.displayXMax = post_ms;
+    }
+    
+    result.displayXRange = result.displayXMax - result.displayXMin;
+    if (result.displayXRange < 1e-6f)
+        result.displayXRange = 1.0f;
+    
+    return result;
+}
+
+void SinglePlotPanel::plotWithDirectMapping (const float* channelData, int numSamples, const DataRange& dataRange)
+{
+    const int numPixels = panelWidthPx;
+    const int samplesPerPixel = std::max (1, numSamples / numPixels);
+    
+    if (samplesPerPixel <= 1)
+    {
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float x = (static_cast<float> (i) / static_cast<float> (numSamples - 1))
+                      * static_cast<float> (panelWidthPx);
+        
+            float value = channelData[i];
+            if (useCustomYLimits)
+            {
+                value = std::max (dataRange.minVal, std::min (dataRange.maxVal, value));
+            }
+        
+            float normalizedValue = (value - dataRange.minVal) / dataRange.range;
+            float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
+
+            if (i == 0)
+                cachedAveragePath.startNewSubPath (x, y);
+            else
+                cachedAveragePath.lineTo (x, y);
+        }
+    }
+    else
+    {
+        for (int pixelIndex = 0; pixelIndex < numPixels; ++pixelIndex)
+        {
+            int sampleStart = pixelIndex * samplesPerPixel;
+            int sampleEnd = std::min (sampleStart + samplesPerPixel, numSamples);
+
+            float pixelMin = channelData[sampleStart];
+            float pixelMax = channelData[sampleStart];
+
+            for (int i = sampleStart + 1; i < sampleEnd; ++i)
+            {
+                pixelMin = std::min (pixelMin, channelData[i]);
+                pixelMax = std::max (pixelMax, channelData[i]);
+            }
+        
+            if (useCustomYLimits)
+            {
+                pixelMin = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMin));
+                pixelMax = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMax));
+            }
+
+            float x = static_cast<float> (pixelIndex);
+            float yMin = static_cast<float> (panelHeightPx) * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
+            float yMax = static_cast<float> (panelHeightPx) * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
+
+            if (pixelIndex == 0)
+            {
+                cachedAveragePath.startNewSubPath (x, yMin);
+            }
+            else
+            {
+                cachedAveragePath.lineTo (x, yMin);
+            }
+
+            if (std::abs (yMax - yMin) > 0.5f)
+            {
+                cachedAveragePath.lineTo (x, yMax);
+            }
+        }
+    }
+}
+
+void SinglePlotPanel::plotWithCustomXLimits (const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange)
+{
+    int firstVisibleSample = -1;
+    int lastVisibleSample = -1;
+    
+    for (int i = 0; i < numSamples; ++i)
+    {
+        float sampleTimeMs = -pre_ms + (i * timeRange.timePerSample);
+        
+        if (sampleTimeMs >= timeRange.displayXMin && sampleTimeMs <= timeRange.displayXMax)
+        {
+            if (firstVisibleSample == -1)
+                firstVisibleSample = i;
+            lastVisibleSample = i;
+        }
+        else if (firstVisibleSample != -1)
+        {
+            break;
+        }
+    }
+    
+    if (firstVisibleSample == -1 || lastVisibleSample < firstVisibleSample)
+        return;
+    
+    const int numPixels = panelWidthPx;
+    int numVisibleSamples = lastVisibleSample - firstVisibleSample + 1;
+    int samplesPerPixel = std::max (1, numVisibleSamples / numPixels);
+    bool pathStarted = false;
+    
+    if (samplesPerPixel <= 1)
+    {
+        for (int i = firstVisibleSample; i <= lastVisibleSample; ++i)
+        {
+            float sampleTimeMs = -pre_ms + (i * timeRange.timePerSample);
+            float x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange) * static_cast<float> (panelWidthPx);
+            
+            float value = channelData[i];
+            if (useCustomYLimits)
+            {
+                value = std::max (dataRange.minVal, std::min (dataRange.maxVal, value));
+            }
+            
+            float normalizedValue = (value - dataRange.minVal) / dataRange.range;
+            float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
+            
+            if (!pathStarted)
+            {
+                cachedAveragePath.startNewSubPath (x, y);
+                pathStarted = true;
+            }
+            else
+            {
+                cachedAveragePath.lineTo (x, y);
+            }
+        }
+    }
+    else
+    {
+        for (int pixelIndex = 0; pixelIndex < numPixels; ++pixelIndex)
+        {
+            int sampleStart = firstVisibleSample + pixelIndex * samplesPerPixel;
+            int sampleEnd = std::min (sampleStart + samplesPerPixel, lastVisibleSample + 1);
+            
+            if (sampleStart >= numSamples)
+                break;
+            
+            float pixelMin = channelData[sampleStart];
+            float pixelMax = channelData[sampleStart];
+            float firstSampleTime = -pre_ms + (sampleStart * timeRange.timePerSample);
+            
+            for (int i = sampleStart + 1; i < sampleEnd; ++i)
+            {
+                pixelMin = std::min (pixelMin, channelData[i]);
+                pixelMax = std::max (pixelMax, channelData[i]);
+            }
+            
+            if (useCustomYLimits)
+            {
+                pixelMin = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMin));
+                pixelMax = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMax));
+            }
+            
+            float x = ((firstSampleTime - timeRange.displayXMin) / timeRange.displayXRange) * static_cast<float> (panelWidthPx);
+            float yMin = static_cast<float> (panelHeightPx) * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
+            float yMax = static_cast<float> (panelHeightPx) * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
+            
+            if (!pathStarted)
+            {
+                cachedAveragePath.startNewSubPath (x, yMin);
+                pathStarted = true;
+            }
+            else
+            {
+                cachedAveragePath.lineTo (x, yMin);
+            }
+            
+            if (std::abs (yMax - yMin) > 0.5f)
+            {
+                cachedAveragePath.lineTo (x, yMax);
+            }
+        }
+    }
+}
+
+bool SinglePlotPanel::updateCachedPath()
+{
+    if (!m_averageBuffer)
+        return false;
+    
+    int currentNumTrials = m_averageBuffer->getNumTrials();
+    
+    if (currentNumTrials == cachedNumTrials && !cachedAveragePath.isEmpty())
+        return false;
+    
+    PerformanceTimer updateTimer ("update cached path", 5.0);
+    
+    AudioBuffer<float> avgBuffer;
+    {
+        PerformanceTimer avgTimer ("getAverage()", 5.0);
+        avgBuffer = m_averageBuffer->getAverage();
+    }
+    
+    auto trialCounterString = String (m_averageBuffer->getNumTrials());
+    trialCounter->setText (trialCounterString, dontSendNotification);
+    
+    if (avgBuffer.getNumSamples() == 0 || avgBuffer.getNumChannels() == 0)
+        return false;
+    
+    const int numSamples = avgBuffer.getNumSamples();
+    const float* channelData = avgBuffer.getReadPointer (channelIndexInAverageBuffer);
+    
+    auto dataRange = calculateDataRange (channelData, numSamples);
+    auto timeRange = calculateTimeRange (numSamples);
+    
+    cachedAveragePath.clear();
+    
+    if (!useCustomXLimits)
+    {
+        plotWithDirectMapping (channelData, numSamples, dataRange);
+    }
+    else
+    {
+        plotWithCustomXLimits (channelData, numSamples, dataRange, timeRange);
+    }
+    
+    cachedNumTrials = currentNumTrials;
+    
+    return true;
+}
+
+void SinglePlotPanel::drawZeroLine (Graphics& g) const
+{
+    float zeroLoc;
+    
+    if (useCustomXLimits)
+    {
+        float displayXMin = xMin;
+        float displayXMax = xMax;
+        float displayXRange = displayXMax - displayXMin;
+        
+        if (0.0f >= displayXMin && 0.0f <= displayXMax)
+        {
+            zeroLoc = ((0.0f - displayXMin) / displayXRange) * static_cast<float> (panelWidthPx);
+        }
+        else
+        {
+            zeroLoc = -1.0f;
+        }
+    }
+    else
+    {
+        zeroLoc = (pre_ms) / (pre_ms + post_ms) * static_cast<float> (panelWidthPx);
+    }
+    
+    if (zeroLoc >= 0.0f)
+    {
+        g.drawLine (zeroLoc, 0, zeroLoc, static_cast<float> (getHeight()), 2.0);
+    }
 }
 
 void SinglePlotPanel::paint (Graphics& g)
 {
-    PerformanceTimer totalTimer ("SinglePlotPanel::paint", 10.0); // Only log if > 10ms
+    PerformanceTimer totalTimer ("SinglePlotPanel::paint", 10.0);
 
     if (shouldDrawBackground)
     {
         g.fillAll (panelBackground);
     }
 
-    if (plotAverage && m_averageBuffer)
+    if (plotAverage && !cachedAveragePath.isEmpty())
     {
-        // Check if we need to update the cached path
-        int currentNumTrials = m_averageBuffer->getNumTrials();
-        bool needsUpdate =
-            pathNeedsUpdate || (currentNumTrials != cachedNumTrials) || cachedAveragePath.isEmpty();
-
-        AudioBuffer<float> avgBuffer;
-        if (needsUpdate)
-        {
-            PerformanceTimer updateTimer ("update cached path", 5.0);
-
-            {
-                PerformanceTimer avgTimer ("getAverage()", 5.0); // Only log if > 5ms
-                avgBuffer = m_averageBuffer->getAverage();
-            }
-
-            auto nSamples = avgBuffer.getNumSamples();
-            auto nChannels = avgBuffer.getNumChannels();
-            auto trialCounterString = String (m_averageBuffer->getNumTrials());
-            trialCounter->setText (trialCounterString, dontSendNotification);
-
-            if (avgBuffer.getNumSamples() > 0 && avgBuffer.getNumChannels() > 0)
-            {
-                const int numSamples = avgBuffer.getNumSamples();
-                const float* channelData = avgBuffer.getReadPointer (channelIndexInAverageBuffer);
-
-                // Calculate min/max for scaling
-                float minVal, maxVal;
-                
-                if (useCustomYLimits)
-                {
-                    // Use custom y-axis limits
-                    minVal = yMin;
-                    maxVal = yMax;
-                }
-                else
-                {
-                    // Auto-scale based on data
-                    minVal = channelData[0];
-                    maxVal = channelData[0];
-                    for (int i = 1; i < numSamples; ++i)
-                    {
-                        minVal = std::min (minVal, channelData[i]);
-                        maxVal = std::max (maxVal, channelData[i]);
-                    }
-                }
-
-                float range = maxVal - minVal;
-                if (range < 1e-6f)
-                    range = 1.0f;
-
-                // Downsample to pixel resolution
-                const int numPixels = panelWidthPx;
-                const int samplesPerPixel = std::max (1, numSamples / numPixels);
-
-                cachedAveragePath.clear();
-
-                if (samplesPerPixel <= 1)
-                {
-                    // No downsampling needed - fewer samples than pixels
-                    for (int i = 0; i < numSamples; ++i)
-                    {
-                        float x = (static_cast<float> (i) / static_cast<float> (numSamples - 1))
-                                  * static_cast<float> (panelWidthPx);
-                        
-                        // Clamp value to range if using custom limits
-                        float value = channelData[i];
-                        if (useCustomYLimits)
-                        {
-                            value = std::max (minVal, std::min (maxVal, value));
-                        }
-                        
-                        float normalizedValue = (value - minVal) / range;
-                        float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
-
-                        if (i == 0)
-                            cachedAveragePath.startNewSubPath (x, y);
-                        else
-                            cachedAveragePath.lineTo (x, y);
-                    }
-                }
-                else
-                {
-                    // Downsample using min-max envelope to preserve peaks and troughs
-                    for (int pixelIndex = 0; pixelIndex < numPixels; ++pixelIndex)
-                    {
-                        int sampleStart = pixelIndex * samplesPerPixel;
-                        int sampleEnd = std::min (sampleStart + samplesPerPixel, numSamples);
-
-                        // Find min and max within this pixel's sample range
-                        float pixelMin = channelData[sampleStart];
-                        float pixelMax = channelData[sampleStart];
-
-                        for (int i = sampleStart + 1; i < sampleEnd; ++i)
-                        {
-                            pixelMin = std::min (pixelMin, channelData[i]);
-                            pixelMax = std::max (pixelMax, channelData[i]);
-                        }
-                        
-                        // Clamp to range if using custom limits
-                        if (useCustomYLimits)
-                        {
-                            pixelMin = std::max (minVal, std::min (maxVal, pixelMin));
-                            pixelMax = std::max (minVal, std::min (maxVal, pixelMax));
-                        }
-
-                        float x = static_cast<float> (pixelIndex);
-
-                        // Draw vertical line from min to max for this pixel
-                        float yMin = static_cast<float> (panelHeightPx)
-                                     * (1.0f - (pixelMin - minVal) / range);
-                        float yMax = static_cast<float> (panelHeightPx)
-                                     * (1.0f - (pixelMax - minVal) / range);
-
-                        if (pixelIndex == 0)
-                        {
-                            cachedAveragePath.startNewSubPath (x, yMin);
-                        }
-                        else
-                        {
-                            cachedAveragePath.lineTo (x, yMin);
-                        }
-
-                        // Draw to max if there's a range in this pixel
-                        if (std::abs (yMax - yMin) > 0.5f)
-                        {
-                            cachedAveragePath.lineTo (x, yMax);
-                        }
-                    }
-                }
-
-                cachedNumTrials = currentNumTrials;
-                pathNeedsUpdate = false;
-            }
-        }
-
-        // Draw the cached path (fast!)
-        if (! cachedAveragePath.isEmpty())
-        {
-            g.setColour (baseColour);
-            g.strokePath (cachedAveragePath, PathStrokeType (1.0f));
-        }
+        g.setColour (baseColour);
+        g.strokePath (cachedAveragePath, PathStrokeType (1.0f));
     }
 
     g.setColour (Colours::white);
-
-    // t = 0
-    float zeroLoc = (pre_ms) / (pre_ms + post_ms) * static_cast<float> (panelWidthPx);
-    g.drawLine (zeroLoc, 0, zeroLoc, static_cast<float> (getHeight()), 2.0);
+    drawZeroLine (g);
 }
 
 void SinglePlotPanel::mouseMove (const MouseEvent& event)

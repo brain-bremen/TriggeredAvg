@@ -46,8 +46,8 @@ TriggeredAvgNode::TriggeredAvgNode()
                        "Pre MS",
                        "Size of the pre-trigger window in ms",
                        "ms",
-                       500.0f,
-                       10.0f,
+                       250.0f,
+                       0.0f,
                        5000.0f,
                        10.0f);
 
@@ -56,7 +56,7 @@ TriggeredAvgNode::TriggeredAvgNode()
                        "Post MS",
                        "Size of the post-trigger window in ms",
                        "ms",
-                       2000.0f,
+                       750.0f,
                        10.0f,
                        5000.0f,
                        10.0f);
@@ -64,7 +64,7 @@ TriggeredAvgNode::TriggeredAvgNode()
     addIntParameter (Parameter::PROCESSOR_SCOPE,
                      ParameterNames::max_trials,
                      "Max Trials",
-                     "Maximum number of trials to store per condition",
+                     "Maximum number of single trials to store per condition",
                      10,
                      1,
                      100);
@@ -84,6 +84,32 @@ TriggeredAvgNode::TriggeredAvgNode()
                      1,
                      1,
                      3);
+
+    addBooleanParameter (Parameter::PROCESSOR_SCOPE,
+                         ParameterNames::use_custom_x_limits,
+                         "Use Custom X Limits",
+                         "Enable custom x-axis limits instead of auto-scaling",
+                         false);
+
+    addFloatParameter (Parameter::PROCESSOR_SCOPE,
+                       ParameterNames::x_min,
+                       "X Min",
+                       "Minimum x-axis limit",
+                       "",
+                       -100.0f,
+                       -5000.0f,
+                       5000.0f,
+                       1.0f);
+
+    addFloatParameter (Parameter::PROCESSOR_SCOPE,
+                       ParameterNames::x_max,
+                       "x Max",
+                       "Maximum x-axis limit",
+                       "",
+                       100.0f,
+                       -5000.0f,
+                       5000.0f,
+                       1.0f);
 
     addBooleanParameter (Parameter::PROCESSOR_SCOPE,
                          ParameterNames::use_custom_y_limits,
@@ -116,6 +142,7 @@ TriggeredAvgNode::TriggeredAvgNode()
 }
 
 TriggeredAvgNode::~TriggeredAvgNode() { shutdownThreads(); }
+
 
 AudioProcessorEditor* TriggeredAvgNode::createEditor()
 {
@@ -216,7 +243,7 @@ void TriggeredAvgNode::process (AudioBuffer<float>& buffer)
     checkForEvents (false);
 }
 
-bool TriggeredAvgNode::startAcquisition ()
+bool TriggeredAvgNode::startAcquisition()
 {
     initializeThreads();
     return m_threadsInitialized;
@@ -240,7 +267,8 @@ int TriggeredAvgNode::getNumberOfPostSamplesIncludingTrigger() const
 }
 int TriggeredAvgNode::getNumberOfSamples() const
 {
-    if (getNumDataStreams() == 0) return 0;
+    if (getNumDataStreams() == 0)
+        return 0;
     const float sampleRate = getDataStreams()[m_dataStreamIndex]->getSampleRate();
     const int preSamples = static_cast<int> (sampleRate * (getPreWindowSizeMs() / 1000.0f));
     const int postSamples = static_cast<int> (sampleRate * (getPostWindowSizeMs() / 1000.0f));

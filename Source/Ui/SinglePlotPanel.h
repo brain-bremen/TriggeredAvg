@@ -50,12 +50,50 @@ public:
     
     /** Returns true if using custom y-axis limits, false if auto-scaling */
     bool hasCustomYLimits() const { return useCustomYLimits; }
+    
+    /** Sets custom x-axis limits for the plot */
+    void setXLimits (float minX, float maxX);
+    
+    /** Returns the current minimum x-axis limit */
+    float getXMin() const { return xMin; }
+    
+    /** Returns the current maximum x-axis limit */
+    float getXMax() const { return xMax; }
+    
+    /** Resets to auto X-axis scaling mode */
+    void resetXLimits();
+    
+    /** Returns true if using custom x-axis limits, false if auto-scaling */
+    bool hasCustomXLimits() const { return useCustomXLimits; }
 
     uint16 streamId;
     const ContinuousChannel* contChannel;
     DynamicObject getInfo() const;
 
 private:
+    struct DataRange
+    {
+        float minVal;
+        float maxVal;
+        float range;
+    };
+
+    struct TimeRange
+    {
+        float totalTimeMs;
+        float timePerSample;
+        float displayXMin;
+        float displayXMax;
+        float displayXRange;
+    };
+
+    DataRange calculateDataRange (const float* channelData, int numSamples);
+    TimeRange calculateTimeRange (int numSamples) const;
+    void plotWithDirectMapping (const float* channelData, int numSamples, const DataRange& dataRange);
+    void plotWithCustomXLimits (const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
+    void drawZeroLine (Graphics& g) const;
+    bool updateCachedPath();
+
     std::unique_ptr<Label> infoLabel;
     std::unique_ptr<Label> channelLabel;
     std::unique_ptr<Label> conditionLabel;
@@ -88,12 +126,16 @@ private:
     Path cachedAveragePath;
     int cachedNumTrials = -1;
     int cachedPanelWidth = -1;
-    bool pathNeedsUpdate = true;
-    int numTrials = 0;  // Track number of trials for this panel
+    int numTrials = 0;
     
     // Y-axis limits
     bool useCustomYLimits = false;
     float yMin = 0.0f;
     float yMax = 1.0f;
+    
+    // X-axis limits
+    bool useCustomXLimits = false;
+    float xMin = 0.0f;
+    float xMax = 1.0f;
 };
 } // namespace TriggeredAverage

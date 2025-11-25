@@ -51,6 +51,40 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     overlayButton->addListener (this);
     overlayButton->setClickingTogglesState (true);
     addAndMakeVisible (overlayButton.get());
+
+    // X-axis limit controls
+    xLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
+    xLimitsToggle->setFont (FontOptions (12.0f));
+    xLimitsToggle->addListener (this);
+    xLimitsToggle->setClickingTogglesState (true);
+    addAndMakeVisible (xLimitsToggle.get());
+    
+    xMinLabel = std::make_unique<Label> ("X Min Label", "Min:");
+    xMinLabel->setFont (FontOptions (12.0f));
+    xMinLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (xMinLabel.get());
+    
+    xMaxLabel = std::make_unique<Label> ("X Max Label", "Max:");
+    xMaxLabel->setFont (FontOptions (12.0f));
+    xMaxLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (xMaxLabel.get());
+    
+    xMinEditor = std::make_unique<TextEditor> ("X Min");
+    xMinEditor->setText ("-50.0");
+    xMinEditor->setFont (FontOptions (12.0f));
+    xMinEditor->setEnabled (false);
+    xMinEditor->onReturnKey = [this]() { updateXLimits(); };
+    xMinEditor->onFocusLost = [this]() { updateXLimits(); };
+    addAndMakeVisible (xMinEditor.get());
+    
+    xMaxEditor = std::make_unique<TextEditor> ("X Max");
+    xMaxEditor->setText ("50.0");
+    xMaxEditor->setFont (FontOptions (12.0f));
+    xMaxEditor->setEnabled (false);
+    xMaxEditor->onReturnKey = [this]() { updateXLimits(); };
+    xMaxEditor->onFocusLost = [this]() { updateXLimits(); };
+    addAndMakeVisible (xMaxEditor.get());
+        
     
     // Y-axis limit controls
     yLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
@@ -132,6 +166,34 @@ void OptionsBar::buttonClicked (Button* button)
             }
         }
     }
+    else if (button == xLimitsToggle.get())
+    {
+        useCustomXLimits = button->getToggleState();
+        
+        if (useCustomXLimits)
+        {
+            xLimitsToggle->setLabel ("MANUAL");
+            xMinEditor->setEnabled (true);
+            xMaxEditor->setEnabled (true);
+            updateXLimits();
+        }
+        else
+        {
+            xLimitsToggle->setLabel ("AUTO");
+            xMinEditor->setEnabled (false);
+            xMaxEditor->setEnabled (false);
+            display->resetXLimits();
+        }
+        
+        // Notify the processor of the change
+        if (auto* processor = canvas->getProcessor())
+        {
+            if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
+            {
+                triggeredAvgNode->getParameter (ParameterNames::use_custom_x_limits)->setNextValue (useCustomXLimits ? 1.0f : 0.0f, false);
+            }
+        }
+    }
     else if (button == saveButton.get())
     {
         DynamicObject output = display->getInfo();
@@ -199,12 +261,19 @@ void OptionsBar::resized()
 
     overlayButton->setBounds (340, verticalOffset, 35, 25);
     
-    // Y-axis limit controls - positioned to the right of the plot type selector
-    yLimitsToggle->setBounds (610, verticalOffset, 65, 25);
-    yMinLabel->setBounds (685, verticalOffset, 35, 25);
-    yMinEditor->setBounds (720, verticalOffset, 60, 25);
-    yMaxLabel->setBounds (790, verticalOffset, 35, 25);
-    yMaxEditor->setBounds (825, verticalOffset, 60, 25);
+    // X-axis limit controls
+    xLimitsToggle->setBounds (610, verticalOffset, 65, 25);
+    xMinLabel->setBounds (685, verticalOffset, 35, 25);
+    xMinEditor->setBounds (720, verticalOffset, 60, 25);
+    xMaxLabel->setBounds (790, verticalOffset, 35, 25);
+    xMaxEditor->setBounds (825, verticalOffset, 60, 25);
+    
+    // Y-axis limit controls - positioned to the right of X-axis controls
+    yLimitsToggle->setBounds (905, verticalOffset, 65, 25);
+    yMinLabel->setBounds (980, verticalOffset, 35, 25);
+    yMinEditor->setBounds (1015, verticalOffset, 60, 25);
+    yMaxLabel->setBounds (1085, verticalOffset, 35, 25);
+    yMaxEditor->setBounds (1120, verticalOffset, 60, 25);
 }
 
 void OptionsBar::paint (Graphics& g)
@@ -222,8 +291,10 @@ void OptionsBar::paint (Graphics& g)
     g.drawText ("Conditions", 240, verticalOffset + 15, 93, 15, Justification::centredRight, false);
     g.drawText ("Plot", 390, verticalOffset, 43, 15, Justification::centredRight, false);
     g.drawText ("Type", 390, verticalOffset + 15, 43, 15, Justification::centredRight, false);
-    g.drawText ("Y-Axis", 600, verticalOffset, 70, 15, Justification::centred, false);
+    g.drawText ("X-Axis", 600, verticalOffset, 70, 15, Justification::centred, false);
     g.drawText ("Limits", 600, verticalOffset + 15, 70, 15, Justification::centred, false);
+    g.drawText ("Y-Axis", 895, verticalOffset, 70, 15, Justification::centred, false);
+    g.drawText ("Limits", 895, verticalOffset + 15, 70, 15, Justification::centred, false);
 }
 
 void OptionsBar::updateYLimits()
@@ -256,12 +327,50 @@ void OptionsBar::updateYLimits()
     }
 }
 
+void OptionsBar::updateXLimits()
+{
+    if (!useCustomXLimits)
+        return;
+        
+    float minX = xMinEditor->getText().getFloatValue();
+    float maxX = xMaxEditor->getText().getFloatValue();
+    
+    if (minX >= maxX)
+    {
+        // Invalid range - reset to defaults
+        xMinEditor->setText ("-50.0");
+        xMaxEditor->setText ("50.0");
+        minX = -50.0f;
+        maxX = 50.0f;
+    }
+    
+    display->setXLimits (minX, maxX);
+    
+    // Notify the processor of the changes
+    if (auto* processor = canvas->getProcessor())
+    {
+        if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
+        {
+            triggeredAvgNode->getParameter (ParameterNames::x_min)->setNextValue (minX, false);
+            triggeredAvgNode->getParameter (ParameterNames::x_max)->setNextValue (maxX, false);
+        }
+    }
+}
+
 void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
 {
     xml->setAttribute ("plot_type", plotTypeSelector->getSelectedId());
     xml->setAttribute ("num_cols", columnNumberSelector->getSelectedId());
     xml->setAttribute ("row_height", rowHeightSelector->getSelectedId());
     xml->setAttribute ("overlay", overlayButton->getToggleState());
+    
+    // Save X-axis limit parameters
+    xml->setAttribute ("use_custom_x_limits", useCustomXLimits);
+    if (useCustomXLimits)
+    {
+        xml->setAttribute ("x_min", xMinEditor->getText().getFloatValue());
+        xml->setAttribute ("x_max", xMaxEditor->getText().getFloatValue());
+    }
     
     // Save Y-axis limit parameters
     xml->setAttribute ("use_custom_y_limits", useCustomYLimits);
@@ -279,10 +388,28 @@ void OptionsBar::loadCustomParametersFromXml (XmlElement* xml)
     overlayButton->setToggleState (xml->getBoolAttribute ("overlay", false), sendNotification);
     plotTypeSelector->setSelectedId (xml->getIntAttribute ("plot_type", 1), sendNotification);
     
-    // Load Y-axis limit parameters
-    bool customLimits = xml->getBoolAttribute ("use_custom_y_limits", false);
+    // Load X-axis limit parameters
+    bool customXLimits = xml->getBoolAttribute ("use_custom_x_limits", false);
     
-    if (customLimits)
+    if (customXLimits)
+    {
+        float minX = (float) xml->getDoubleAttribute ("x_min", -50.0);
+        float maxX = (float) xml->getDoubleAttribute ("x_max", 50.0);
+        
+        xMinEditor->setText (String (minX));
+        xMaxEditor->setText (String (maxX));
+        
+        xLimitsToggle->setToggleState (true, sendNotification);
+    }
+    else
+    {
+        xLimitsToggle->setToggleState (false, sendNotification);
+    }
+    
+    // Load Y-axis limit parameters
+    bool customYLimits = xml->getBoolAttribute ("use_custom_y_limits", false);
+    
+    if (customYLimits)
     {
         float minY = (float) xml->getDoubleAttribute ("y_min", -100.0);
         float maxY = (float) xml->getDoubleAttribute ("y_max", 100.0);

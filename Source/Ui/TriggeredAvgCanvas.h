@@ -53,9 +53,8 @@ public:
     void paint (Graphics& g) override;
     void saveCustomParametersToXml (XmlElement* xml) const;
     void loadCustomParametersFromXml (XmlElement* xml);
-
-    /** Updates Y-axis limits from the text editors */
     void updateYLimits();
+    void updateXLimits();
 
 private:
     GridDisplay* display;
@@ -68,6 +67,15 @@ private:
     std::unique_ptr<ComboBox> columnNumberSelector;
     std::unique_ptr<ComboBox> rowHeightSelector;
     std::unique_ptr<UtilityButton> overlayButton;
+
+    // X-axis limit controls
+    std::unique_ptr<UtilityButton> xLimitsToggle; 
+    std::unique_ptr<Label> xMinLabel;
+    std::unique_ptr<Label> xMaxLabel;
+    std::unique_ptr<TextEditor> xMinEditor;
+    std::unique_ptr<TextEditor> xMaxEditor;
+    bool useCustomXLimits = false;
+
 
     // Y-axis limit controls
     std::unique_ptr<UtilityButton> yLimitsToggle;

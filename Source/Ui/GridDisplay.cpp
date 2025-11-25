@@ -119,7 +119,7 @@ void TriggeredAverage::GridDisplay::setNumColumns (int numColumns_)
 {
     numColumns = numColumns_;
     resized();
-}
+    }
 
 void TriggeredAverage::GridDisplay::setRowHeight (int height)
 {
@@ -180,6 +180,7 @@ void TriggeredAverage::GridDisplay::setYLimits (float minY, float maxY)
     {
         panel->setYLimits (minY, maxY);
     }
+    repaint();
 }
 
 void TriggeredAverage::GridDisplay::resetYLimits()
@@ -188,6 +189,25 @@ void TriggeredAverage::GridDisplay::resetYLimits()
     {
         panel->resetYLimits();
     }
+    repaint();
+}
+
+void TriggeredAverage::GridDisplay::setXLimits (float minX, float maxX)
+{
+    for (auto panel : panels)
+    {
+        panel->setXLimits (minX, maxX);
+    }
+    repaint();
+}
+
+void TriggeredAverage::GridDisplay::resetXLimits()
+{
+    for (auto panel : panels)
+    {
+        panel->resetXLimits();
+    }
+    repaint();
 }
 
 void TriggeredAverage::GridDisplay::setYLimitsForSource (const TriggerSource* source, float minY, float maxY)

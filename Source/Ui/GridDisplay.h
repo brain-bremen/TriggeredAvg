@@ -44,6 +44,12 @@ public:
     /** Resets all panels to auto-scaling mode */
     void resetYLimits();
     
+    /** Sets custom x-axis limits for all panels */
+    void setXLimits (float minX, float maxX);
+    
+    /** Resets all panels to auto X-axis scaling mode */
+    void resetXLimits();
+    
     /** Sets custom y-axis limits for panels associated with a specific trigger source */
     void setYLimitsForSource (const TriggerSource* source, float minY, float maxY);
     

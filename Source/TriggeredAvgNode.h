@@ -48,6 +48,9 @@ namespace ParameterNames
     constexpr auto max_trials = "max_trials";
     constexpr auto trigger_line = "trigger_line";
     constexpr auto trigger_type = "trigger_type";
+    constexpr auto use_custom_x_limits = "use_custom_x_limits";
+    constexpr auto x_min = "x_min";
+    constexpr auto x_max = "x_max";
     constexpr auto use_custom_y_limits = "use_custom_y_limits";
     constexpr auto y_min = "y_min";
     constexpr auto y_max = "y_max";
@@ -59,6 +62,8 @@ class TriggeredAvgNode : public GenericProcessor, public juce::AsyncUpdater
 public:
     TriggeredAvgNode();
     ~TriggeredAvgNode() override;
+    TriggeredAvgNode (TriggeredAvgNode&& other) noexcept = delete;
+    TriggeredAvgNode& operator= (TriggeredAvgNode&& other) noexcept = delete;
 
     // overrides
     AudioProcessorEditor* createEditor() override;
