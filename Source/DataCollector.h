@@ -19,9 +19,15 @@ struct CaptureRequest
     int postSamples;
 };
 
-// Stores the last N individual trials in a circular buffer
 class SingleTrialBuffer
 {
+    // TODO: Fix AI slop
+    // - data should be structure with all trials of one channel be together
+    //   because that's what we iterate over when plotting
+    // - this does not have to be a circular buffer
+    // - maybe locking at the channel level makes sense?
+    // - Removing a (at least the last) trial should be possible
+    // - Using the AudioBuffer class does not make sense here, I think
 public:
     SingleTrialBuffer() = default;
 
@@ -30,7 +36,7 @@ public:
     int getNumStoredTrials() const;
     int getMaxTrials() const { return maxTrials; }
     void setMaxTrials (int n);
-    void setSize (int nChannels, int nSamples);
+    void setSize (int nChannels, int nSamples, int nTrials = 50);
     void clear();
 
 private:
@@ -46,9 +52,7 @@ private:
 class DataStore
 {
 public:
-    void ResetAndResizeBuffersForTriggerSource (TriggerSource* source,
-                                                      int nChannels,
-                                                      int nSamples);
+    void ResetAndResizeBuffersForTriggerSource (TriggerSource* source, int nChannels, int nSamples);
     void ResizeAllAverageBuffers (int nChannels, int nSamples, bool clear = true);
 
     MultiChannelAverageBuffer* getRefToAverageBufferForTriggerSource (TriggerSource* source)
@@ -148,7 +152,7 @@ public:
 private:
     juce::AudioBuffer<float> m_sumBuffer;
     juce::AudioBuffer<float> m_sumSquaresBuffer;
-    juce::AudioBuffer<float> m_averageBuffer;  // Cached running average
+    juce::AudioBuffer<float> m_averageBuffer; // Cached running average
     int m_numTrials = 0;
     int m_numChannels;
     int m_numSamples;
