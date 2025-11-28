@@ -13,6 +13,7 @@ class GridDisplay : public Component
 {
 public:
     GridDisplay();
+    ~GridDisplay();
 
     /** Renders the Visualizer on each animation callback cycle
         Called instead of Juce's "repaint()" to avoid redrawing underlying components

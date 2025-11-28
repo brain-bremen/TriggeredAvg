@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include <atomic>
 #include <mutex>
+#include <stdint.h>
 
 namespace TriggeredAverage
 {

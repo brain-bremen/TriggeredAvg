@@ -96,9 +96,10 @@ void SingleTrialBuffer::clear()
     }
 }
 
-void SingleTrialBuffer::setSize (int nChannels, int nSamples)
+void SingleTrialBuffer::setSize (int nChannels, int nSamples, int nTrials)
 {
     // Clear existing data and reinitialize with new size
+    maxTrials = nTrials;
     trials.clear();
     trials.resize (maxTrials);
     for (auto& trial : trials)
