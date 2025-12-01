@@ -732,19 +732,13 @@ bool SinglePlotPanel::updateCachedTrialPaths()
     }
     else
     {
-        // Find global min/max across all trials to plot
-        for (int trialIdx = startIndex; trialIdx < currentTrialCount; ++trialIdx)
+        // Use the SingleTrialBuffer's optimized min/max calculation
+        if (!m_trialBuffer->getChannelMinMax(channelIndexInAverageBuffer, startIndex, currentTrialCount,
+                                              globalDataRange.minVal, globalDataRange.maxVal))
         {
-            const auto& trial = m_trialBuffer->getTrial (trialIdx);
-            if (trial.getNumChannels() > channelIndexInAverageBuffer && trial.getNumSamples() > 0)
-            {
-                const float* channelData = trial.getReadPointer (channelIndexInAverageBuffer);
-                for (int i = 0; i < trial.getNumSamples(); ++i)
-                {
-                    globalDataRange.minVal = std::min (globalDataRange.minVal, channelData[i]);
-                    globalDataRange.maxVal = std::max (globalDataRange.maxVal, channelData[i]);
-                }
-            }
+            // Fallback if method fails
+            globalDataRange.minVal = 0.0f;
+            globalDataRange.maxVal = 1.0f;
         }
     }
     
@@ -753,31 +747,61 @@ bool SinglePlotPanel::updateCachedTrialPaths()
         globalDataRange.range = 1.0f;
     
     // Get time range (assuming all trials have same time window)
-    TimeRange timeRange;
-    if (currentTrialCount > 0)
-    {
-        const auto& firstTrial = m_trialBuffer->getTrial (startIndex);
-        timeRange = calculateTimeRange (firstTrial.getNumSamples());
-    }
-    else
-    {
+    // Use the known number of samples from the buffer
+    int numSamples = m_trialBuffer->getNumSamples();
+    if (numSamples == 0)
         return false;
-    }
+        
+    TimeRange timeRange = calculateTimeRange (numSamples);
     
     // Create path for each trial
     for (int trialIdx = startIndex; trialIdx < currentTrialCount; ++trialIdx)
     {
-        const auto& trial = m_trialBuffer->getTrial (trialIdx);
-        
-        if (trial.getNumChannels() <= channelIndexInAverageBuffer || trial.getNumSamples() == 0)
-            continue;
-        
-        const float* channelData = trial.getReadPointer (channelIndexInAverageBuffer);
-        
+        // Access individual samples to build the path
         Path trialPath;
-        plotTrialToPath (trialPath, channelData, trial.getNumSamples(), globalDataRange, timeRange);
         
-        cachedTrialPaths.add (std::move (trialPath));
+        // Build path by directly accessing samples from the buffer
+        for (int sampleIdx = 0; sampleIdx < numSamples; ++sampleIdx)
+        {
+            float value = m_trialBuffer->getSample(channelIndexInAverageBuffer, trialIdx, sampleIdx);
+            
+            if (useCustomYLimits)
+            {
+                value = std::max(globalDataRange.minVal, std::min(globalDataRange.maxVal, value));
+            }
+            
+            float normalizedValue = (value - globalDataRange.minVal) / globalDataRange.range;
+            
+            float x, y;
+            
+            if (!useCustomXLimits)
+            {
+                // Direct mapping
+                x = (static_cast<float>(sampleIdx) / static_cast<float>(numSamples - 1)) 
+                    * static_cast<float>(panelWidthPx);
+            }
+            else
+            {
+                // Custom X limits (zoom/pan)
+                float sampleTimeMs = -pre_ms + (sampleIdx * timeRange.timePerSample);
+                
+                if (sampleTimeMs < timeRange.displayXMin || sampleTimeMs > timeRange.displayXMax)
+                    continue;
+                    
+                x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange) 
+                    * static_cast<float>(panelWidthPx);
+            }
+            
+            y = static_cast<float>(panelHeightPx) * (1.0f - normalizedValue);
+            
+            if (trialPath.isEmpty())
+                trialPath.startNewSubPath(x, y);
+            else
+                trialPath.lineTo(x, y);
+        }
+        
+        if (!trialPath.isEmpty())
+            cachedTrialPaths.add (std::move (trialPath));
     }
     
     cachedTrialCount = currentTrialCount;

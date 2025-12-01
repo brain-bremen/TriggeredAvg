@@ -2,6 +2,7 @@ set(TRIGGERED_AVG_SOURCES_RELATIVE
     DataCollector.cpp
     MultiChannelRingBuffer.cpp
     OpenEphysLib.cpp
+    SingleTrialBuffer.cpp
     TriggeredAvgActions.cpp
     TriggeredAvgNode.cpp
     TriggerSource.cpp
@@ -16,6 +17,7 @@ set(TRIGGERED_AVG_SOURCES_RELATIVE
 set(TRIGGERED_AVG_HEADERS_RELATIVE
     DataCollector.h
     MultiChannelRingBuffer.h
+    SingleTrialBuffer.h
     TriggeredAvgActions.h
     TriggeredAvgNode.h
     TriggerSource.h

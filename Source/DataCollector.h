@@ -1,5 +1,6 @@
 #pragma once
 #include "MultiChannelRingBuffer.h"
+#include "SingleTrialBuffer.h"
 
 #include <JuceHeader.h>
 #include <ProcessorHeaders.h>
@@ -19,33 +20,44 @@ struct CaptureRequest
     int postSamples;
 };
 
-class SingleTrialBuffer
+/** JUCE-aware wrapper around SingleTrialBuffer that provides AudioBuffer convenience methods */
+class SingleTrialBufferJuce : public SingleTrialBuffer
 {
-    // TODO: Fix AI slop
-    // - data should be structure with all trials of one channel be together
-    //   because that's what we iterate over when plotting
-    // - this does not have to be a circular buffer
-    // - maybe locking at the channel level makes sense?
-    // - Removing a (at least the last) trial should be possible
-    // - Using the AudioBuffer class does not make sense here, I think
 public:
-    SingleTrialBuffer() = default;
+    SingleTrialBufferJuce() = default;
+    using SingleTrialBuffer::addTrial;  // Expose raw pointer version
+    using SingleTrialBuffer::addTrialChannel;
+    using SingleTrialBuffer::getChannelTrials;
+    using SingleTrialBuffer::getSample;
+    using SingleTrialBuffer::getTrial;  // Expose raw pointer version
+    using SingleTrialBuffer::getNumStoredTrials;
+    using SingleTrialBuffer::getMaxTrials;
+    using SingleTrialBuffer::getNumChannels;
+    using SingleTrialBuffer::getNumSamples;
+    using SingleTrialBuffer::setMaxTrials;
+    using SingleTrialBuffer::setSize;
+    using SingleTrialBuffer::clear;
+    
+    /** Add a trial from a JUCE AudioBuffer (convenience wrapper) */
+    template<typename SampleType>
+    void addTrial(const juce::AudioBuffer<SampleType>& buffer)
+    {
+        SingleTrialBuffer::addTrial(buffer.getArrayOfReadPointers(), 
+                                     buffer.getNumChannels(), 
+                                     buffer.getNumSamples());
+    }
+    
+    /** Copy a specific trial into a JUCE AudioBuffer (convenience wrapper) */
+    template<typename SampleType>
+    void getTrial(int trialIndex, juce::AudioBuffer<SampleType>& destination) const
+    {
+        SingleTrialBuffer::getTrial(trialIndex, 
+                                     destination.getArrayOfWritePointers(),
+                                     destination.getNumChannels(), 
+                                     destination.getNumSamples());
+    }
 
-    void addTrial (const AudioBuffer<float>& trial);
-    const AudioBuffer<float>& getTrial (int index) const;
-    int getNumStoredTrials() const;
-    int getMaxTrials() const { return maxTrials; }
-    void setMaxTrials (int n);
-    void setSize (int nChannels, int nSamples, int nTrials = 50);
-    void clear();
-
-private:
-    std::vector<AudioBuffer<float>> trials;
-    int writeIndex = 0;
-    int numStored = 0;
-    int maxTrials = 50; // default max number of trials to store
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SingleTrialBuffer)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SingleTrialBufferJuce)
 };
 
 // Thread-safe storage of average buffers
@@ -62,7 +74,7 @@ public:
         return nullptr;
     }
 
-    SingleTrialBuffer* getRefToTrialBufferForTriggerSource (TriggerSource* source)
+    SingleTrialBufferJuce* getRefToTrialBufferForTriggerSource (TriggerSource* source)
     {
         if (m_singleTrialBuffers.contains (source))
             return &m_singleTrialBuffers.at (source);
@@ -83,12 +95,10 @@ public:
 
     void setMaxTrialsToStore (int n);
 
-    // TODO: Add method for getteing a ref with a lock
-
 private:
     std::recursive_mutex m_mutex;
     std::unordered_map<TriggerSource*, MultiChannelAverageBuffer> m_averageBuffers;
-    std::unordered_map<TriggerSource*, SingleTrialBuffer> m_singleTrialBuffers;
+    std::unordered_map<TriggerSource*, SingleTrialBufferJuce> m_singleTrialBuffers;
 };
 
 class DataCollector : public Thread
@@ -138,7 +148,6 @@ public:
     int getNumTrials() const;
     int getNumChannels() const;
     int getNumSamples() const;
-    // resets and resizes the buffers
     void setSize (int nChannels, int nSamples)
     {
         m_numChannels = nChannels;
@@ -152,7 +161,7 @@ public:
 private:
     juce::AudioBuffer<float> m_sumBuffer;
     juce::AudioBuffer<float> m_sumSquaresBuffer;
-    juce::AudioBuffer<float> m_averageBuffer; // Cached running average
+    juce::AudioBuffer<float> m_averageBuffer;
     int m_numTrials = 0;
     int m_numChannels;
     int m_numSamples;

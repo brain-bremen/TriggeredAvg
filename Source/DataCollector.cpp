@@ -6,109 +6,6 @@
 
 using namespace TriggeredAverage;
 
-// SingleTrialBuffer implementation
-void SingleTrialBuffer::addTrial (const AudioBuffer<float>& trial)
-{
-    // Initialize vector on first use or if resized
-    if (trials.size() != static_cast<size_t> (maxTrials))
-    {
-        trials.resize (maxTrials);
-        for (auto& t : trials)
-        {
-            if (t.getNumChannels() != trial.getNumChannels()
-                || t.getNumSamples() != trial.getNumSamples())
-            {
-                t.setSize (trial.getNumChannels(), trial.getNumSamples());
-            }
-        }
-    }
-
-    // Ensure the trial at writeIndex has the correct size
-    if (trials[writeIndex].getNumChannels() != trial.getNumChannels()
-        || trials[writeIndex].getNumSamples() != trial.getNumSamples())
-    {
-        trials[writeIndex].setSize (trial.getNumChannels(), trial.getNumSamples());
-    }
-
-    // Copy trial data into the circular buffer
-    for (int ch = 0; ch < trial.getNumChannels(); ++ch)
-    {
-        trials[writeIndex].copyFrom (ch, 0, trial, ch, 0, trial.getNumSamples());
-    }
-
-    // Update circular buffer indices
-    writeIndex = (writeIndex + 1) % maxTrials;
-    numStored = std::min (numStored + 1, maxTrials);
-}
-
-const AudioBuffer<float>& SingleTrialBuffer::getTrial (int index) const
-{
-    jassert (index >= 0 && index < numStored);
-
-    // Map logical index to physical index in circular buffer
-    // Most recent trial is at logical index (numStored - 1)
-    // Oldest trial starts at (writeIndex - numStored) in the circular buffer
-    int physicalIndex = (writeIndex - numStored + index + maxTrials) % maxTrials;
-    return trials[physicalIndex];
-}
-
-int SingleTrialBuffer::getNumStoredTrials() const { return numStored; }
-
-void SingleTrialBuffer::setMaxTrials (int n)
-{
-    int newMaxTrials = std::max (1, n);
-
-    if (newMaxTrials == maxTrials)
-        return;
-
-    // Save existing trials in order (oldest to newest)
-    std::vector<AudioBuffer<float>> oldTrials;
-    oldTrials.reserve (numStored);
-
-    for (int i = 0; i < numStored; ++i)
-    {
-        int physicalIndex = (writeIndex - numStored + i + maxTrials) % maxTrials;
-        oldTrials.push_back (trials[physicalIndex]);
-    }
-
-    // Resize and rebuild
-    maxTrials = newMaxTrials;
-    trials.clear();
-    trials.resize (maxTrials);
-    writeIndex = 0;
-    numStored = 0;
-
-    // Re-add trials (keep only the most recent maxTrials)
-    int startIndex = std::max (0, static_cast<int> (oldTrials.size()) - maxTrials);
-    for (int i = startIndex; i < static_cast<int> (oldTrials.size()); ++i)
-    {
-        addTrial (oldTrials[i]);
-    }
-}
-
-void SingleTrialBuffer::clear()
-{
-    writeIndex = 0;
-    numStored = 0;
-    for (auto& trial : trials)
-    {
-        trial.clear();
-    }
-}
-
-void SingleTrialBuffer::setSize (int nChannels, int nSamples)
-{
-    // Clear existing data and reinitialize with new size
-    trials.clear();
-    trials.resize (maxTrials);
-    for (auto& trial : trials)
-    {
-        trial.setSize (nChannels, nSamples, false, false, true);
-    }
-    writeIndex = 0;
-    numStored = 0;
-}
-
 // DataStore implementation
 void DataStore::ResetAndResizeBuffersForTriggerSource (TriggerSource* source,
                                                        int nChannels,
@@ -274,7 +171,7 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
 
     // First, get buffer pointer and check size with minimal lock time
     MultiChannelAverageBuffer* avgBuffer = nullptr;
-    SingleTrialBuffer* trialBuffer = nullptr;
+    SingleTrialBufferJuce* trialBuffer = nullptr;
     bool needsResize = false;
 
     {
@@ -333,7 +230,7 @@ RingBufferReadResult DataCollector::processCaptureRequest (const CaptureRequest&
         // Add to average buffer
         avgBuffer->addDataToAverageFromBuffer (m_collectBuffer);
 
-        // Add to trial buffer
+        // Add to trial buffer (uses template wrapper for AudioBuffer)
         trialBuffer->addTrial (m_collectBuffer);
     }
 
