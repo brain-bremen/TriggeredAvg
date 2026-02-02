@@ -26,7 +26,6 @@ class SingleTrialBufferJuce : public SingleTrialBuffer
 public:
     SingleTrialBufferJuce() = default;
     using SingleTrialBuffer::addTrial;  // Expose raw pointer version
-    using SingleTrialBuffer::addTrialChannel;
     using SingleTrialBuffer::getChannelTrials;
     using SingleTrialBuffer::getSample;
     using SingleTrialBuffer::getTrial;  // Expose raw pointer version

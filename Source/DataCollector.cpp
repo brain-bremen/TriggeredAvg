@@ -22,7 +22,9 @@ void DataStore::ResetAndResizeBuffersForTriggerSource (TriggerSource* source,
     else
     {
         m_averageBuffers[source].setSize (nChannels, nSamples);
-        m_singleTrialBuffers[source].setSize (nChannels, nSamples);
+        m_singleTrialBuffers[source].setSize (
+            SingleTrialBufferSize { .numChannels = nChannels,
+                                    .numSamples = nSamples });
     }
 }
 

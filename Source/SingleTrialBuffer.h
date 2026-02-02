@@ -1,13 +1,20 @@
 #pragma once
 
-#include <vector>
 #include <algorithm>
+#include <cassert>
 #include <cstring>
 #include <span>
-#include <cassert>
+#include <vector>
 
 namespace TriggeredAverage
 {
+
+struct SingleTrialBufferSize
+{
+    int numChannels = 32;
+    int numSamples = 1000;
+    int maxTrials = 50;
+};
 
 /**
  * @brief JUCE-independent buffer for storing multiple trials of multi-channel data
@@ -25,29 +32,22 @@ namespace TriggeredAverage
 class SingleTrialBuffer
 {
 public:
-    SingleTrialBuffer() = default;
+    SingleTrialBuffer (SingleTrialBufferSize size = {}) { setSize (size); };
     ~SingleTrialBuffer() = default;
 
     // Non-copyable but movable
-    SingleTrialBuffer(const SingleTrialBuffer&) = delete;
-    SingleTrialBuffer& operator=(const SingleTrialBuffer&) = delete;
-    SingleTrialBuffer(SingleTrialBuffer&&) noexcept = default;
-    SingleTrialBuffer& operator=(SingleTrialBuffer&&) noexcept = default;
+    SingleTrialBuffer (const SingleTrialBuffer&) = delete;
+    SingleTrialBuffer& operator= (const SingleTrialBuffer&) = delete;
+    SingleTrialBuffer (SingleTrialBuffer&&) noexcept = default;
+    SingleTrialBuffer& operator= (SingleTrialBuffer&&) noexcept = default;
 
     /** Add a trial from multi-channel data 
      * @param trialData Array of channel pointers, each pointing to nSamples data
      * @param nChannels Number of channels (must match buffer's numChannels)
      * @param nSamples Number of samples per channel (must match buffer's numSamples)
      */
-    void addTrial(const float* const* trialData, int nChannels, int nSamples);
-    
-    /** Add a trial from a single channel's worth of data 
-     * @param channelData Pointer to channel data
-     * @param nSamples Number of samples in the data (must match buffer's numSamples)
-     * @param channelIndex Which channel this data belongs to
-     */
-    void addTrialChannel(const float* channelData, int nSamples, int channelIndex);
-    
+    void addTrial (const float* const* trialData, int nChannels, int nSamples);
+
     /** Get a span view of all trials for a specific channel
      * @param channelIndex Channel to access (0-based)
      * @return Span of float data containing all stored trials for this channel
@@ -55,47 +55,47 @@ public:
      * @note The returned span points to a circular buffer, so trials may not be
      *       in chronological order. Use getPhysicalTrialIndex() to access specific trials.
      */
-    std::span<const float> getChannelTrials(int channelIndex) const;
-    
+    std::span<const float> getChannelTrials (int channelIndex) const;
+
     /** Get a single sample from a specific trial and channel 
      * @param channelIndex Channel index (0-based)
      * @param trialIndex Logical trial index (0 = oldest stored)
      * @param sampleIndex Sample within the trial
      */
-    float getSample(int channelIndex, int trialIndex, int sampleIndex) const;
-    
+    float getSample (int channelIndex, int trialIndex, int sampleIndex) const;
+
     /** Copy a specific trial into the provided multi-channel buffer
      * @param trialIndex Logical trial index (0 = oldest stored)
      * @param destination Array of channel pointers to write to
      * @param nChannels Number of channels to copy
      * @param nSamples Number of samples to copy per channel
      */
-    void getTrial(int trialIndex, float** destination, int nChannels, int nSamples) const;
-    
+    void getTrial (int trialIndex, float** destination, int nChannels, int nSamples) const;
+
     /** Get the number of currently stored trials (may be less than maxTrials) */
-    int getNumStoredTrials() const { return numStored; }
-    
+    int getNumStoredTrials() const { return numberOfStoredTrials; }
+
     /** Get the maximum number of trials this buffer can hold */
-    int getMaxTrials() const { return maxTrials; }
-    
+    int getMaxTrials() const { return m_size.maxTrials; }
+
     /** Get the number of channels */
-    int getNumChannels() const { return numChannels; }
-    
+    int getNumChannels() const { return m_size.numChannels; }
+
     /** Get the number of samples per trial */
-    int getNumSamples() const { return numSamples; }
-    
+    int getNumSamples() const { return m_size.numSamples; }
+
     /** Change the maximum number of trials to store
      * @param n New maximum (keeps most recent trials if reducing size)
      */
-    void setMaxTrials(int n);
-    
+    void setMaxTrials (int n);
+
     /** Resize the buffer (clears all data)
      * @param nChannels Number of channels
      * @param nSamples Number of samples per trial
      * @param nTrials Maximum number of trials to store
      */
-    void setSize(int nChannels, int nSamples, int nTrials = 50);
-    
+    void setSize (SingleTrialBufferSize size);
+
     /** Clear all stored trials (doesn't change buffer size) */
     void clear();
 
@@ -107,34 +107,39 @@ public:
      * @param outMax Reference to store maximum value found
      * @return true if successful, false if no valid data
      */
-    bool getChannelMinMax(int channelIndex, int startTrialIndex, int endTrialIndex, 
-                          float& outMin, float& outMax) const;
+    bool getChannelMinMax (int channelIndex,
+                           int startTrialIndex,
+                           int endTrialIndex,
+                           float& outMin,
+                           float& outMax) const;
 
 private:
     // Channel-major layout: all trials for channel 0, then all trials for channel 1, etc.
     // Memory: [Ch0_T0][Ch0_T1]...[Ch0_Tn][Ch1_T0][Ch1_T1]...[Ch1_Tn]...
     std::vector<float> data;
-    
-    int numChannels = 0;
-    int numSamples = 0;    // samples per trial
-    int maxTrials = 50;    // maximum number of trials to store
-    int numStored = 0;     // current number of stored trials
-    int writeIndex = 0;    // circular buffer write position
-    
+
+    //int numChannels = 0;
+    //int numSamples = 0; // samples per trial
+    //int maxTrials = 50; // maximum number of trials to store
+    SingleTrialBufferSize m_size;
+
+    int numberOfStoredTrials = 0; // current number of stored trials (<= maxTrials)
+    int writeIndex = 0; // circular buffer write position
+
     /** Get flat array index for a given channel, trial, and sample */
-    inline size_t getIndex(int channel, int trial, int sample) const
+    inline int getIndex (int channel, int trial, int sample) const
     {
         // Each channel block contains maxTrials * numSamples floats
         // Within a channel block, data for trial T starts at offset T * numSamples
-        return static_cast<size_t>(channel) * maxTrials * numSamples 
-               + static_cast<size_t>(trial) * numSamples 
-               + sample;
+        return static_cast<int> (channel) * m_size.maxTrials * m_size.numSamples
+               + static_cast<int> (trial) * m_size.numSamples + sample;
     }
-    
+
     /** Get the physical trial index from logical trial index (handles circular buffer) */
-    inline int getPhysicalTrialIndex(int logicalIndex) const
+    inline int getPhysicalTrialIndex (int logicalIndex) const
     {
-        return (writeIndex - numStored + logicalIndex + maxTrials) % maxTrials;
+        return (writeIndex - numberOfStoredTrials + logicalIndex + m_size.maxTrials)
+               % m_size.maxTrials;
     }
 };
 
