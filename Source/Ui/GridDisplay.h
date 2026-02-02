@@ -1,11 +1,11 @@
 #pragma once
+#include "SinglePlotPanel.h"
 #include <VisualizerWindowHeaders.h>
 
 namespace TriggeredAverage
 {
 class MultiChannelAverageBuffer;
 enum class DisplayMode : std::uint8_t;
-class SinglePlotPanel;
 class TriggerSource;
 
 // GUI Component that holds the grid of triggered average panels
@@ -40,35 +40,36 @@ public:
 
     /** Sets custom y-axis limits for all panels */
     void setYLimits (float minY, float maxY);
-    
+
     /** Resets all panels to auto-scaling mode */
     void resetYLimits();
-    
+
     /** Sets custom x-axis limits for all panels */
     void setXLimits (float minX, float maxX);
-    
+
     /** Resets all panels to auto X-axis scaling mode */
     void resetXLimits();
-    
+
     /** Sets custom y-axis limits for panels associated with a specific trigger source */
     void setYLimitsForSource (const TriggerSource* source, float minY, float maxY);
-    
+
     /** Sets custom y-axis limits for panels associated with a specific channel */
     void setYLimitsForChannel (const ContinuousChannel* channel, float minY, float maxY);
 
     DynamicObject getInfo();
-    
+
     /** Configures individual trial display settings for all panels */
     void setShowIndividualTrials (bool show);
-    
+
     /** Sets the maximum number of trials to display for all panels */
     void setMaxTrialsToDisplay (int n);
-    
+
     /** Sets the opacity for individual trial traces for all panels */
     void setTrialOpacity (float opacity);
-    
+
     /** Connects trial buffers to panels for a given trigger source */
-    void setTrialBuffersForSource (const TriggerSource* source, const class SingleTrialBuffer* trialBuffer);
+    void setTrialBuffersForSource (const TriggerSource* source,
+                                   const class SingleTrialBuffer* trialBuffer);
 
 private:
     OwnedArray<SinglePlotPanel> panels;

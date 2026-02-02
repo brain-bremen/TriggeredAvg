@@ -143,7 +143,7 @@ void SingleTrialBuffer::setSize(int nChannels, int nSamples, int nTrials)
     data.resize(static_cast<size_t>(numChannels) * maxTrials * numSamples, 0.0f);
     
     writeIndex = 0;
-    numStored = 0;
+    //numStored = 0;
 }
 
 bool SingleTrialBuffer::getChannelMinMax(int channelIndex, int startTrialIndex, int endTrialIndex,

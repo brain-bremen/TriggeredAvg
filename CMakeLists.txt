@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.23.0)
 
 set(PLUGIN_NAME triggered-avg)
 project(OE_PLUGIN_${PLUGIN_NAME})
+
+# Option to build tests
+option(BUILD_TESTS "Build the test suite" ON)
+
 if (NOT DEFINED GUI_BASE_DIR)
     if (DEFINED ENV{GUI_BASE_DIR})
         set(GUI_BASE_DIR $ENV{GUI_BASE_DIR})
@@ -72,7 +76,7 @@ target_compile_definitions(${PLUGIN_NAME}
         $<$<CONFIG:Debug>:_DEBUG=1>
         $<$<CONFIG:Release>:NDEBUG=1>
 )
-target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers cxx_std_20)
+target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers cxx_std_23)
 target_include_directories(${PLUGIN_NAME}
   PUBLIC
   ${GUI_BASE_DIR}/JuceLibraryCode
@@ -111,4 +115,15 @@ elseif(APPLE)
 
     install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api10)
     set(CMAKE_PREFIX_PATH /opt/local)
+endif()
+
+# Add tests subdirectory if BUILD_TESTS is enabled
+if(BUILD_TESTS)
+    # Build the main GUI project with tests enabled to get gui_testable_source and test_helpers
+    set(BUILD_TESTS ON CACHE BOOL "Enable testing" FORCE)
+    set(OE_DONT_CHECK_BUILD_PATH TRUE CACHE BOOL "Disable build path check" FORCE)
+    add_subdirectory(${GUI_BASE_DIR} main_gui_build EXCLUDE_FROM_ALL)
+
+    # Now add our plugin tests
+    add_subdirectory(Tests)
 endif()

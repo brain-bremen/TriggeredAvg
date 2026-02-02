@@ -12,9 +12,6 @@ class MultiChannelRingBufferTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        // Initialize JUCE for GUI components
-        scopedJuceInit = std::make_unique<ScopedJuceInitialiser_GUI>();
-
         // Common setup for most tests
         numChannels = 4;
         bufferSize = 100;
@@ -24,7 +21,6 @@ protected:
     void TearDown() override
     {
         ringBuffer.reset();
-        scopedJuceInit.reset();
     }
 
     // Helper function to create test data
@@ -63,7 +59,6 @@ protected:
         }
     }
 
-    std::unique_ptr<ScopedJuceInitialiser_GUI> scopedJuceInit;
     int numChannels;
     int bufferSize;
     std::unique_ptr<MultiChannelRingBuffer> ringBuffer;
@@ -81,7 +76,7 @@ TEST_F (MultiChannelRingBufferTest, BasicDataAddition)
     auto testData = createTestBuffer (numChannels, 100, 1.0f);
     int64 firstSample = 0;
 
-    ringBuffer->addData (testData, firstSample);
+    ringBuffer->addData (testData, firstSample, 100);
     auto size = ringBuffer->getBufferSize();
 
     EXPECT_EQ (ringBuffer->getCurrentSampleNumber(), 100);
@@ -98,12 +93,11 @@ TEST_F (MultiChannelRingBufferTest, BasicDataAddition)
 TEST_F (MultiChannelRingBufferTest, SimpleTriggeredDataRead)
 {
     auto testData = createTestBuffer (numChannels, 100, 1.0f);
-    ringBuffer->addData (testData, 0);
+    ringBuffer->addData (testData, 0, 100);
 
     AudioBuffer<float> outputBuffer;
-    Array<int> channels = { 0, 1, 2, 3 };
 
-    auto result = ringBuffer->readAroundSample (50, 10, 10, channels, outputBuffer);
+    auto result = ringBuffer->readAroundSample (50, 10, 10, outputBuffer);
 
     ASSERT_EQ (result, RingBufferReadResult::Success);
     EXPECT_EQ (outputBuffer.getNumChannels(), 4);
@@ -116,50 +110,48 @@ TEST_F (MultiChannelRingBufferTest, SimpleTriggeredDataRead)
 TEST_F (MultiChannelRingBufferTest, ChannelSubsetRead)
 {
     auto testData = createTestBuffer (numChannels, 100, 1.0f);
-    ringBuffer->addData (testData, 0);
+    ringBuffer->addData (testData, 0, 100);
 
     AudioBuffer<float> outputBuffer;
-    Array<int> channels = { 1, 3 }; // Only channels 1 and 3
 
-    auto success = ringBuffer->readAroundSample (50, 10, 10, channels, outputBuffer);
+    auto success = ringBuffer->readAroundSample (50, 10, 10, outputBuffer);
 
     ASSERT_EQ (success, RingBufferReadResult::Success);
-    EXPECT_EQ (outputBuffer.getNumChannels(), 2);
+    EXPECT_EQ (outputBuffer.getNumChannels(), 4);
     EXPECT_EQ (outputBuffer.getNumSamples(), 20);
 
-    // Verify channels 1 and 3 data
+    // Verify all channel data
     for (int sample = 0; sample < 20; ++sample)
     {
-        float expected_ch1 = 1.0f + 1000.0f + (40 + sample); // Channel 1 data
-        float expected_ch3 = 1.0f + 3000.0f + (40 + sample); // Channel 3 data
-
-        EXPECT_FLOAT_EQ (outputBuffer.getSample (0, sample), expected_ch1);
-        EXPECT_FLOAT_EQ (outputBuffer.getSample (1, sample), expected_ch3);
+        for (int ch = 0; ch < 4; ++ch)
+        {
+            float expected = 1.0f + ch * 1000.0f + (40 + sample);
+            EXPECT_FLOAT_EQ (outputBuffer.getSample (ch, sample), expected);
+        }
     }
 }
 TEST_F (MultiChannelRingBufferTest, EdgeCaseReads)
 {
     auto testData = createTestBuffer (numChannels, 100, 1.0f);
-    ringBuffer->addData (testData, 1000); // Start from sample 1000
+    ringBuffer->addData (testData, 1000, 100); // Start from sample 1000
 
     AudioBuffer<float> outputBuffer;
-    Array<int> channels = { 0 };
 
     // Read exactly at the beginning of available data
-    auto success = ringBuffer->readAroundSample (1000, 0, 1, channels, outputBuffer);
+    auto success = ringBuffer->readAroundSample (1000, 0, 1, outputBuffer);
     ASSERT_EQ (success, RingBufferReadResult::Success);
     EXPECT_EQ (outputBuffer.getNumSamples(), 1);
 
     // Read exactly at the end of available data
-    success = ringBuffer->readAroundSample (1099, 0, 1, channels, outputBuffer);
+    success = ringBuffer->readAroundSample (1099, 0, 1, outputBuffer);
     ASSERT_EQ (success, RingBufferReadResult::Success);
 
     // Try to read beyond available data
-    success = ringBuffer->readAroundSample (1100, 0, 1, channels, outputBuffer);
+    success = ringBuffer->readAroundSample (1100, 0, 1, outputBuffer);
     ASSERT_NE (success, RingBufferReadResult::Success);
 
     // Try to read before available data
-    success = ringBuffer->readAroundSample (999, 0, 1, channels, outputBuffer);
+    success = ringBuffer->readAroundSample (999, 0, 1, outputBuffer);
     ASSERT_NE (success, RingBufferReadResult::Success);
 }
 //
