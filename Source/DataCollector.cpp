@@ -33,9 +33,7 @@ void TriggeredAverage::DataStore::ResizeAllAverageBuffers (int nChannels, int nS
     auto lock = GetLock();
     for (auto& [source, buffer] : m_averageBuffers)
     {
-        buffer.setSize (nChannels, nSamples);
-        if (clear)
-            buffer.resetTrials();
+        buffer.setSize (nChannels, nSamples, clear);
     }
 }
 
@@ -147,7 +145,8 @@ void DataCollector::run()
                 } while (result == RingBufferReadResult::NotEnoughNewData
                          && iRetry < maximumNumberOfRetries && ! threadShouldExit());
 
-                assert (RingBufferReadResult::Success == result);
+                assert (RingBufferReadResult::Success == result
+                        || RingBufferReadResult::DataInRingBufferTooOld == result);
             }
 
             if (averageBuffersWereUpdated)

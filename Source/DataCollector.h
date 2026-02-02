@@ -50,8 +50,12 @@ public:
     template<typename SampleType>
     void getTrial(int trialIndex, juce::AudioBuffer<SampleType>& destination) const
     {
+        // TODO: Consider refactoring to use std::span to avoid const_cast
+        // getArrayOfWritePointers() returns Type*const* (const array of pointers)
+        // but getTrial expects Type** (non-const array). The const_cast is safe here
+        // because we only write to the audio data, not modify the array structure.
         SingleTrialBuffer::getTrial(trialIndex, 
-                                     destination.getArrayOfWritePointers(),
+                                     const_cast<SampleType**>(destination.getArrayOfWritePointers()),
                                      destination.getNumChannels(), 
                                      destination.getNumSamples());
     }
@@ -147,14 +151,15 @@ public:
     int getNumTrials() const;
     int getNumChannels() const;
     int getNumSamples() const;
-    void setSize (int nChannels, int nSamples)
+    void setSize (int nChannels, int nSamples, bool clearTrials = true)
     {
         m_numChannels = nChannels;
         m_numSamples = nSamples;
         m_sumBuffer.setSize (nChannels, nSamples);
         m_sumSquaresBuffer.setSize (nChannels, nSamples);
         m_averageBuffer.setSize (nChannels, nSamples);
-        resetTrials();
+        if (clearTrials)
+            resetTrials();
     }
 
 private:
