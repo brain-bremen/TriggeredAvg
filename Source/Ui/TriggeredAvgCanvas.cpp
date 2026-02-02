@@ -3,7 +3,6 @@
 #include "TimeAxis.h"
 #include "TriggeredAvgNode.h"
 
-#include <mfidl.h>
 using namespace TriggeredAverage;
 
 OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, TimeAxis* timescale_)
@@ -58,17 +57,17 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     xLimitsToggle->addListener (this);
     xLimitsToggle->setClickingTogglesState (true);
     addAndMakeVisible (xLimitsToggle.get());
-    
+
     xMinLabel = std::make_unique<Label> ("X Min Label", "Min:");
     xMinLabel->setFont (FontOptions (12.0f));
     xMinLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (xMinLabel.get());
-    
+
     xMaxLabel = std::make_unique<Label> ("X Max Label", "Max:");
     xMaxLabel->setFont (FontOptions (12.0f));
     xMaxLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (xMaxLabel.get());
-    
+
     xMinEditor = std::make_unique<TextEditor> ("X Min");
     xMinEditor->setText ("-50.0");
     xMinEditor->setFont (FontOptions (12.0f));
@@ -76,7 +75,7 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     xMinEditor->onReturnKey = [this]() { updateXLimits(); };
     xMinEditor->onFocusLost = [this]() { updateXLimits(); };
     addAndMakeVisible (xMinEditor.get());
-    
+
     xMaxEditor = std::make_unique<TextEditor> ("X Max");
     xMaxEditor->setText ("50.0");
     xMaxEditor->setFont (FontOptions (12.0f));
@@ -84,25 +83,25 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     xMaxEditor->onReturnKey = [this]() { updateXLimits(); };
     xMaxEditor->onFocusLost = [this]() { updateXLimits(); };
     addAndMakeVisible (xMaxEditor.get());
-        
-    
+
+
     // Y-axis limit controls
     yLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
     yLimitsToggle->setFont (FontOptions (12.0f));
     yLimitsToggle->addListener (this);
     yLimitsToggle->setClickingTogglesState (true);
     addAndMakeVisible (yLimitsToggle.get());
-    
+
     yMinLabel = std::make_unique<Label> ("Y Min Label", "Min:");
     yMinLabel->setFont (FontOptions (12.0f));
     yMinLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (yMinLabel.get());
-    
+
     yMaxLabel = std::make_unique<Label> ("Y Max Label", "Max:");
     yMaxLabel->setFont (FontOptions (12.0f));
     yMaxLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (yMaxLabel.get());
-    
+
     yMinEditor = std::make_unique<TextEditor> ("Y Min");
     yMinEditor->setText ("-100.0");
     yMinEditor->setFont (FontOptions (12.0f));
@@ -110,7 +109,7 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     yMinEditor->onReturnKey = [this]() { updateYLimits(); };
     yMinEditor->onFocusLost = [this]() { updateYLimits(); };
     addAndMakeVisible (yMinEditor.get());
-    
+
     yMaxEditor = std::make_unique<TextEditor> ("Y Max");
     yMaxEditor->setText ("100.0");
     yMaxEditor->setFont (FontOptions (12.0f));
@@ -118,19 +117,19 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     yMaxEditor->onReturnKey = [this]() { updateYLimits(); };
     yMaxEditor->onFocusLost = [this]() { updateYLimits(); };
     addAndMakeVisible (yMaxEditor.get());
-    
+
     // Individual trial display controls
     showTrialsToggle = std::make_unique<UtilityButton> ("OFF");
     showTrialsToggle->setFont (FontOptions (12.0f));
     showTrialsToggle->addListener (this);
     showTrialsToggle->setClickingTogglesState (true);
     addAndMakeVisible (showTrialsToggle.get());
-    
+
     numTrialsLabel = std::make_unique<Label> ("Num Trials Label", "N:");
     numTrialsLabel->setFont (FontOptions (12.0f));
     numTrialsLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (numTrialsLabel.get());
-    
+
     numTrialsSelector = std::make_unique<ComboBox> ("Number of Trials");
     for (int i = 1; i <= 50; i += (i < 10 ? 1 : (i < 20 ? 5 : 10)))
         numTrialsSelector->addItem (String (i), i);
@@ -138,12 +137,12 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     numTrialsSelector->addListener (this);
     numTrialsSelector->setEnabled (false);  // Initially disabled
     addAndMakeVisible (numTrialsSelector.get());
-    
+
     trialOpacityLabel = std::make_unique<Label> ("Opacity Label", "?:");
     trialOpacityLabel->setFont (FontOptions (12.0f));
     trialOpacityLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (trialOpacityLabel.get());
-    
+
     trialOpacitySlider = std::make_unique<Slider> (Slider::LinearHorizontal, Slider::NoTextBox);
     trialOpacitySlider->setRange (0.1, 1.0, 0.05);
     trialOpacitySlider->setValue (0.3);
@@ -173,7 +172,7 @@ void OptionsBar::buttonClicked (Button* button)
     else if (button == yLimitsToggle.get())
     {
         useCustomYLimits = button->getToggleState();
-        
+
         if (useCustomYLimits)
         {
             yLimitsToggle->setLabel ("MANUAL");
@@ -188,7 +187,7 @@ void OptionsBar::buttonClicked (Button* button)
             yMaxEditor->setEnabled (false);
             display->resetYLimits();
         }
-        
+
         // Notify the processor of the change
         if (auto* processor = canvas->getProcessor())
         {
@@ -201,7 +200,7 @@ void OptionsBar::buttonClicked (Button* button)
     else if (button == xLimitsToggle.get())
     {
         useCustomXLimits = button->getToggleState();
-        
+
         if (useCustomXLimits)
         {
             xLimitsToggle->setLabel ("MANUAL");
@@ -216,7 +215,7 @@ void OptionsBar::buttonClicked (Button* button)
             xMaxEditor->setEnabled (false);
             display->resetXLimits();
         }
-        
+
         // Notify the processor of the change
         if (auto* processor = canvas->getProcessor())
         {
@@ -229,7 +228,7 @@ void OptionsBar::buttonClicked (Button* button)
     else if (button == showTrialsToggle.get())
     {
         showTrials = button->getToggleState();
-        
+
         if (showTrials)
         {
             showTrialsToggle->setLabel ("ON");
@@ -242,7 +241,7 @@ void OptionsBar::buttonClicked (Button* button)
             numTrialsSelector->setEnabled (false);
             trialOpacitySlider->setEnabled (false);
         }
-        
+
         updateTrialDisplaySettings();
     }
     else if (button == saveButton.get())
@@ -316,21 +315,21 @@ void OptionsBar::resized()
     columnNumberSelector->setBounds (200, verticalOffset, 50, 25);
 
     overlayButton->setBounds (340, verticalOffset, 35, 25);
-    
+
     // X-axis limit controls
     xLimitsToggle->setBounds (610, verticalOffset, 65, 25);
     xMinLabel->setBounds (685, verticalOffset, 35, 25);
     xMinEditor->setBounds (720, verticalOffset, 60, 25);
     xMaxLabel->setBounds (790, verticalOffset, 35, 25);
     xMaxEditor->setBounds (825, verticalOffset, 60, 25);
-    
+
     // Y-axis limit controls - positioned to the right of X-axis controls
     yLimitsToggle->setBounds (905, verticalOffset, 65, 25);
     yMinLabel->setBounds (980, verticalOffset, 35, 25);
     yMinEditor->setBounds (1015, verticalOffset, 60, 25);
     yMaxLabel->setBounds (1085, verticalOffset, 35, 25);
     yMaxEditor->setBounds (1120, verticalOffset, 60, 25);
-    
+
     // Individual trial display controls - positioned after Y-axis controls
     showTrialsToggle->setBounds (1200, verticalOffset, 35, 25);
     numTrialsLabel->setBounds (1245, verticalOffset, 20, 25);
@@ -366,10 +365,10 @@ void OptionsBar::updateYLimits()
 {
     if (!useCustomYLimits)
         return;
-        
+
     float minY = yMinEditor->getText().getFloatValue();
     float maxY = yMaxEditor->getText().getFloatValue();
-    
+
     if (minY >= maxY)
     {
         // Invalid range - reset to defaults
@@ -378,9 +377,9 @@ void OptionsBar::updateYLimits()
         minY = -100.0f;
         maxY = 100.0f;
     }
-    
+
     display->setYLimits (minY, maxY);
-    
+
     // Notify the processor of the changes
     if (auto* processor = canvas->getProcessor())
     {
@@ -396,10 +395,10 @@ void OptionsBar::updateXLimits()
 {
     if (!useCustomXLimits)
         return;
-        
+
     float minX = xMinEditor->getText().getFloatValue();
     float maxX = xMaxEditor->getText().getFloatValue();
-    
+
     if (minX >= maxX)
     {
         // Invalid range - reset to defaults
@@ -408,9 +407,9 @@ void OptionsBar::updateXLimits()
         minX = -50.0f;
         maxX = 50.0f;
     }
-    
+
     display->setXLimits (minX, maxX);
-    
+
     // Notify the processor of the changes
     if (auto* processor = canvas->getProcessor())
     {
@@ -426,11 +425,11 @@ void OptionsBar::updateTrialDisplaySettings()
 {
     // Update local state
     trialOpacity = (float) trialOpacitySlider->getValue();
-    
+
     // Propagate settings to all panels via GridDisplay
     display->setMaxTrialsToDisplay (maxTrialsToDisplay);
     display->setTrialOpacity (trialOpacity);
-    
+
     // Note: Trial buffers need to be connected when panels are created
     // This is handled in TriggeredAvgNode when it calls addContChannel
 }
@@ -441,7 +440,7 @@ void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
     xml->setAttribute ("num_cols", columnNumberSelector->getSelectedId());
     xml->setAttribute ("row_height", rowHeightSelector->getSelectedId());
     xml->setAttribute ("overlay", overlayButton->getToggleState());
-    
+
     // Save X-axis limit parameters
     xml->setAttribute ("use_custom_x_limits", useCustomXLimits);
     if (useCustomXLimits)
@@ -449,7 +448,7 @@ void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
         xml->setAttribute ("x_min", xMinEditor->getText().getFloatValue());
         xml->setAttribute ("x_max", xMaxEditor->getText().getFloatValue());
     }
-    
+
     // Save Y-axis limit parameters
     xml->setAttribute ("use_custom_y_limits", useCustomYLimits);
     if (useCustomYLimits)
@@ -457,7 +456,7 @@ void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
         xml->setAttribute ("y_min", yMinEditor->getText().getFloatValue());
         xml->setAttribute ("y_max", yMaxEditor->getText().getFloatValue());
     }
-    
+
     // Save individual trial display parameters
     xml->setAttribute ("show_trials", showTrials);
     xml->setAttribute ("max_trials_to_display", maxTrialsToDisplay);
@@ -470,48 +469,48 @@ void OptionsBar::loadCustomParametersFromXml (XmlElement* xml)
     rowHeightSelector->setSelectedId (xml->getIntAttribute ("row_height", 150), sendNotification);
     overlayButton->setToggleState (xml->getBoolAttribute ("overlay", false), sendNotification);
     plotTypeSelector->setSelectedId (xml->getIntAttribute ("plot_type", 1), sendNotification);
-    
+
     // Load X-axis limit parameters
     bool customXLimits = xml->getBoolAttribute ("use_custom_x_limits", false);
-    
+
     if (customXLimits)
     {
         float minX = (float) xml->getDoubleAttribute ("x_min", -50.0);
         float maxX = (float) xml->getDoubleAttribute ("x_max", 50.0);
-        
+
         xMinEditor->setText (String (minX));
         xMaxEditor->setText (String (maxX));
-        
+
         xLimitsToggle->setToggleState (true, sendNotification);
     }
     else
     {
         xLimitsToggle->setToggleState (false, sendNotification);
     }
-    
+
     // Load Y-axis limit parameters
     bool customYLimits = xml->getBoolAttribute ("use_custom_y_limits", false);
-    
+
     if (customYLimits)
     {
         float minY = (float) xml->getDoubleAttribute ("y_min", -100.0);
         float maxY = (float) xml->getDoubleAttribute ("y_max", 100.0);
-        
+
         yMinEditor->setText (String (minY));
         yMaxEditor->setText (String (maxY));
-        
+
         yLimitsToggle->setToggleState (true, sendNotification);
     }
     else
     {
         yLimitsToggle->setToggleState (false, sendNotification);
     }
-    
+
     // Load individual trial display parameters
     showTrials = xml->getBoolAttribute ("show_trials", false);
     maxTrialsToDisplay = xml->getIntAttribute ("max_trials_to_display", 10);
     trialOpacity = (float) xml->getDoubleAttribute ("trial_opacity", 0.3);
-    
+
     // Update UI controls
     showTrialsToggle->setToggleState (showTrials, sendNotification);
     numTrialsSelector->setSelectedId (maxTrialsToDisplay, sendNotification);
@@ -541,7 +540,7 @@ TriggeredAvgCanvas::TriggeredAvgCanvas (TriggeredAvgNode* processor_)
     m_optionsBar = std::make_unique<OptionsBar> (this, m_grid.get(), m_timeAxis.get());
     m_optionsBarHolder->setViewedComponent (m_optionsBar.get(), false);
     addAndMakeVisible (m_optionsBarHolder.get());
-    
+
     // Start timer for regular display updates (60 Hz)
     // Note: Visualizer already inherits from Timer, so we use the inherited startTimer
     startTimer (16);  // ~60 FPS

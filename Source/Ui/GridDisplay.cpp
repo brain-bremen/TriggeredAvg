@@ -7,6 +7,8 @@
 
 TriggeredAverage::GridDisplay::GridDisplay() = default;
 
+TriggeredAverage::GridDisplay::~GridDisplay() = default;
+
 void TriggeredAverage::GridDisplay::refresh()
 {
     // Invalidate cache to force panels to check for new data
