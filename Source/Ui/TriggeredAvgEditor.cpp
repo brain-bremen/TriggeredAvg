@@ -61,18 +61,27 @@ void TriggeredAvgEditor::updateSettings()
     const int nChannels = proc->getTotalContinuousChannels();
     const int nSamples = proc->getNumberOfSamples();
 
+    // First, initialize buffers for all sources
     for (auto source : proc->getTriggerSources().getAll())
     {
         store->ResetAndResizeBuffersForTriggerSource (source, nChannels, nSamples);
-        for (int i = 0; i < proc->getTotalContinuousChannels(); i++)
-        {
-            const ContinuousChannel* channel = proc->getContinuousChannel (i);
+    }
 
+    // Then add panels grouped by channel (for overlay feature to work correctly)
+    for (int i = 0; i < proc->getTotalContinuousChannels(); i++)
+    {
+        const ContinuousChannel* channel = proc->getContinuousChannel (i);
+        
+        for (auto source : proc->getTriggerSources().getAll())
+        {
             canvas->addContChannel (
                 channel, source, i, store->getRefToAverageBufferForTriggerSource (source));
         }
-        
-        // Set trial buffer for this source's panels
+    }
+    
+    // Set trial buffers for all sources
+    for (auto source : proc->getTriggerSources().getAll())
+    {
         canvas->setTrialBuffersForSource (source, store->getRefToTrialBufferForTriggerSource (source));
     }
     canvas->setWindowSizeMs (proc->getPreWindowSizeMs(), proc->getPostWindowSizeMs());
