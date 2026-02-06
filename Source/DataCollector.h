@@ -37,13 +37,30 @@ public:
     using SingleTrialBuffer::setSize;
     using SingleTrialBuffer::clear;
     
-    /** Add a trial from a JUCE AudioBuffer (convenience wrapper) */
+    /** Add a trial from a JUCE AudioBuffer (convenience wrapper using span-based API) */
     template<typename SampleType>
     void addTrial(const juce::AudioBuffer<SampleType>& buffer)
     {
-        SingleTrialBuffer::addTrial(buffer.getArrayOfReadPointers(), 
-                                     buffer.getNumChannels(), 
-                                     buffer.getNumSamples());
+        // Build spans from AudioBuffer for type-safe, size-aware API
+        std::vector<std::span<const SampleType>> channelSpans;
+        channelSpans.reserve(buffer.getNumChannels());
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        {
+            channelSpans.emplace_back(buffer.getReadPointer(ch), buffer.getNumSamples());
+        }
+        
+        // For float buffers, use the span-based addTrial directly
+        if constexpr (std::is_same_v<SampleType, float>)
+        {
+            SingleTrialBuffer::addTrial(std::span(channelSpans));
+        }
+        else
+        {
+            // For non-float types, fall back to pointer version (will convert via delegation)
+            SingleTrialBuffer::addTrial(buffer.getArrayOfReadPointers(), 
+                                         buffer.getNumChannels(), 
+                                         buffer.getNumSamples());
+        }
     }
     
     /** Copy a specific trial into a JUCE AudioBuffer (convenience wrapper) */

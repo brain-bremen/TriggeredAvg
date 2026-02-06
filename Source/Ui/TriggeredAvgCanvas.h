@@ -3,6 +3,7 @@
 #include "GridDisplay.h"
 #include "TimeAxis.h"
 #include "TriggeredAvgNode.h"
+#include "DisplayMode.h"
 #include <VisualizerWindowHeaders.h>
 
 namespace TriggeredAverage
@@ -11,32 +12,6 @@ class TriggerSource;
 class TriggeredAvgCanvas;
 class GridDisplay;
 class DataStore;
-
-enum class DisplayMode : std::uint8_t
-{
-    INVALID = 0,
-    INDIVIDUAL_TRACES = 1,
-    AVERAGE_TRAGE = 2,
-    ALL_AND_AVERAGE = 3,
-};
-
-constexpr auto DisplayModeModeToString (DisplayMode mode) -> const char*
-{
-    // using enum DisplayMode;
-    switch (mode)
-    {
-        case DisplayMode::INVALID:
-            return "Invalid";
-        case DisplayMode::INDIVIDUAL_TRACES:
-            return "All traces";
-        case DisplayMode::AVERAGE_TRAGE:
-            return "Average trace";
-        case DisplayMode::ALL_AND_AVERAGE:
-            return "Average + All";
-        default:
-            return "Unknown";
-    }
-}
 
 static const auto DisplayModeStrings =
     StringArray { "All traces", "Average trace", "Average + All" };
@@ -148,6 +123,9 @@ public:
 
     /** Changes source name */
     void updateConditionName (const TriggerSource* source);
+
+    /** Sets trial buffer for panels associated with a trigger source */
+    void setTrialBuffersForSource (const TriggerSource* source, const SingleTrialBuffer* trialBuffer);
 
     /** Prepare for update*/
     void prepareToUpdate();

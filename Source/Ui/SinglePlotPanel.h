@@ -1,12 +1,12 @@
 #pragma once
 
+#include "DisplayMode.h"
 #include <VisualizerWindowHeaders.h>
 
 namespace TriggeredAverage
 {
 class MultiChannelAverageBuffer;
 class SingleTrialBuffer;
-enum class DisplayMode : std::uint8_t;
 class GridDisplay;
 class TriggerSource;
 

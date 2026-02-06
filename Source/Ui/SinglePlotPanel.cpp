@@ -754,51 +754,19 @@ bool SinglePlotPanel::updateCachedTrialPaths()
         
     TimeRange timeRange = calculateTimeRange (numSamples);
     
-    // Create path for each trial
+    // Create path for each trial using zero-copy direct pointer access
     for (int trialIdx = startIndex; trialIdx < currentTrialCount; ++trialIdx)
     {
-        // Access individual samples to build the path
         Path trialPath;
         
-        // Build path by directly accessing samples from the buffer
-        for (int sampleIdx = 0; sampleIdx < numSamples; ++sampleIdx)
-        {
-            float value = m_trialBuffer->getSample(channelIndexInAverageBuffer, trialIdx, sampleIdx);
-            
-            if (useCustomYLimits)
-            {
-                value = std::max(globalDataRange.minVal, std::min(globalDataRange.maxVal, value));
-            }
-            
-            float normalizedValue = (value - globalDataRange.minVal) / globalDataRange.range;
-            
-            float x, y;
-            
-            if (!useCustomXLimits)
-            {
-                // Direct mapping
-                x = (static_cast<float>(sampleIdx) / static_cast<float>(numSamples - 1)) 
-                    * static_cast<float>(panelWidthPx);
-            }
-            else
-            {
-                // Custom X limits (zoom/pan)
-                float sampleTimeMs = -pre_ms + (sampleIdx * timeRange.timePerSample);
-                
-                if (sampleTimeMs < timeRange.displayXMin || sampleTimeMs > timeRange.displayXMax)
-                    continue;
-                    
-                x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange) 
-                    * static_cast<float>(panelWidthPx);
-            }
-            
-            y = static_cast<float>(panelHeightPx) * (1.0f - normalizedValue);
-            
-            if (trialPath.isEmpty())
-                trialPath.startNewSubPath(x, y);
-            else
-                trialPath.lineTo(x, y);
-        }
+        // Get direct pointer to trial data (zero-copy, no memcpy needed!)
+        const float* trialDataPtr = m_trialBuffer->getTrialDataPointer(channelIndexInAverageBuffer, trialIdx);
+        
+        if (trialDataPtr == nullptr)
+            continue;
+        
+        // Use the existing optimized plotting method with downsampling
+        plotTrialToPath(trialPath, trialDataPtr, numSamples, globalDataRange, timeRange);
         
         if (!trialPath.isEmpty())
             cachedTrialPaths.add (std::move (trialPath));
@@ -898,7 +866,7 @@ void SinglePlotPanel::paint (Graphics& g)
     if (plotAllTraces && !cachedTrialPaths.isEmpty())
     {
         g.setOpacity (trialOpacity);
-        g.setColour (baseColour);
+        g.setColour (Colours::grey);
         
         for (const auto& trialPath : cachedTrialPaths)
         {

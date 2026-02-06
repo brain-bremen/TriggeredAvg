@@ -611,6 +611,11 @@ void TriggeredAvgCanvas::updateConditionName (const TriggerSource* source)
     m_grid->updateConditionName (source);
 }
 
+void TriggeredAvgCanvas::setTrialBuffersForSource (const TriggerSource* source, const SingleTrialBuffer* trialBuffer)
+{
+    m_grid->setTrialBuffersForSource (source, trialBuffer);
+}
+
 void TriggeredAvgCanvas::prepareToUpdate() { m_grid->prepareToUpdate(); }
 
 void TriggeredAvgCanvas::saveCustomParametersToXml (XmlElement* xml)

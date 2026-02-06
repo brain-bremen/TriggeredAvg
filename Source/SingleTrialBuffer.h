@@ -41,10 +41,17 @@ public:
     SingleTrialBuffer (SingleTrialBuffer&&) noexcept = default;
     SingleTrialBuffer& operator= (SingleTrialBuffer&&) noexcept = default;
 
-    /** Add a trial from multi-channel data 
+    /** Add a trial from multi-channel data using spans (safer, size-aware)
+     * @param channelData Span of spans, where each inner span represents one channel's data
+     * @note All channels must have the same sample count. Buffer will be resized if needed.
+     */
+    void addTrial (std::span<const std::span<const float>> channelData);
+
+    /** Legacy: Add a trial from multi-channel data (pointer-based)
      * @param trialData Array of channel pointers, each pointing to nSamples data
      * @param nChannels Number of channels (must match buffer's numChannels)
      * @param nSamples Number of samples per channel (must match buffer's numSamples)
+     * @note This delegates to the span-based version for safety
      */
     void addTrial (const float* const* trialData, int nChannels, int nSamples);
 
@@ -112,6 +119,15 @@ public:
                            int endTrialIndex,
                            float& outMin,
                            float& outMax) const;
+
+    /** Get direct read-only pointer to trial data (zero-copy access)
+     * @param channelIndex Channel index (0-based)
+     * @param trialIndex Logical trial index (0 = oldest stored)
+     * @return Pointer to the first sample of the trial, or nullptr if invalid
+     * @note The returned pointer is valid for numSamples floats.
+     *       This provides zero-copy access to the contiguous channel-major layout.
+     */
+    const float* getTrialDataPointer (int channelIndex, int trialIndex) const;
 
 private:
     // Channel-major layout: all trials for channel 0, then all trials for channel 1, etc.

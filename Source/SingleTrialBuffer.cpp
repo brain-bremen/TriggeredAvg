@@ -3,28 +3,55 @@
 namespace TriggeredAverage
 {
 
-void SingleTrialBuffer::addTrial(const float* const* trialData, int nChannels, int nSamples)
+void SingleTrialBuffer::addTrial(std::span<const std::span<const float>> channelData)
 {
+    const int nChannels = static_cast<int>(channelData.size());
+    const int nSamples = nChannels > 0 ? static_cast<int>(channelData[0].size()) : 0;
+    
+    // Validate all channels have same sample count
+    for (const auto& channel : channelData)
+    {
+        assert(static_cast<int>(channel.size()) == nSamples && "All channels must have same sample count");
+    }
+    
+    // Resize if needed
+    if (nChannels != m_size.numChannels || nSamples != m_size.numSamples)
+    {
+        setSize(SingleTrialBufferSize{
+            .numChannels = nChannels,
+            .numSamples = nSamples,
+            .maxTrials = m_size.maxTrials
+        });
+    }
+
     // Initialize vector on first use or if resized
     if (data.size() != static_cast<int>(m_size.numChannels * m_size.maxTrials * m_size.numSamples))
     {
         data.resize(static_cast<int>(m_size.numChannels) * m_size.maxTrials * m_size.numSamples, 0.0f);
     }
 
-    //assert(m_size.nChannels == numChannels && "Channel count mismatch");
-    //assert(m_size.nSamples == numSamples && "Sample count mismatch");
-
-    // Copy trial data into the circular buffer using channel-major layout
-    for (int ch = 0; ch < m_size.numChannels; ++ch)
+    // Copy trial data - size is guaranteed by span
+    for (int ch = 0; ch < nChannels; ++ch)
     {
-        const float* sourceData = trialData[ch];
         const int destOffset = getIndex(ch, writeIndex, 0);
-        std::memcpy(&data[destOffset], sourceData, m_size.numSamples * sizeof(float));
+        std::memcpy(&data[destOffset], channelData[ch].data(), nSamples * sizeof(float));
     }
 
     // Update circular buffer indices
     writeIndex = (writeIndex + 1) % m_size.maxTrials;
     numberOfStoredTrials = std::min(numberOfStoredTrials + 1, m_size.maxTrials);
+}
+
+void SingleTrialBuffer::addTrial(const float* const* trialData, int nChannels, int nSamples)
+{
+    // Create temporary spans and delegate to span version for safety
+    std::vector<std::span<const float>> channelSpans;
+    channelSpans.reserve(nChannels);
+    for (int ch = 0; ch < nChannels; ++ch)
+    {
+        channelSpans.emplace_back(trialData[ch], nSamples);
+    }
+    addTrial(std::span(channelSpans));
 }
 
 
@@ -163,6 +190,22 @@ bool SingleTrialBuffer::getChannelMinMax(int channelIndex, int startTrialIndex, 
     }
     
     return true;
+}
+
+const float* SingleTrialBuffer::getTrialDataPointer(int channelIndex, int trialIndex) const
+{
+    assert(channelIndex >= 0 && channelIndex < m_size.numChannels && "Channel index out of range");
+    assert(trialIndex >= 0 && trialIndex < numberOfStoredTrials && "Trial index out of range");
+    
+    if (channelIndex < 0 || channelIndex >= m_size.numChannels ||
+        trialIndex < 0 || trialIndex >= numberOfStoredTrials ||
+        data.empty())
+    {
+        return nullptr;
+    }
+    
+    int physicalTrial = getPhysicalTrialIndex(trialIndex);
+    return &data[getIndex(channelIndex, physicalTrial, 0)];
 }
 
 } // namespace TriggeredAverage

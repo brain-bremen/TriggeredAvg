@@ -71,6 +71,9 @@ void TriggeredAvgEditor::updateSettings()
             canvas->addContChannel (
                 channel, source, i, store->getRefToAverageBufferForTriggerSource (source));
         }
+        
+        // Set trial buffer for this source's panels
+        canvas->setTrialBuffersForSource (source, store->getRefToTrialBufferForTriggerSource (source));
     }
     canvas->setWindowSizeMs (proc->getPreWindowSizeMs(), proc->getPostWindowSizeMs());
     canvas->resized();

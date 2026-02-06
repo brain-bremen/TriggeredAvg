@@ -1,11 +1,11 @@
 #pragma once
 #include "SinglePlotPanel.h"
+#include "DisplayMode.h"
 #include <VisualizerWindowHeaders.h>
 
 namespace TriggeredAverage
 {
 class MultiChannelAverageBuffer;
-enum class DisplayMode : std::uint8_t;
 class TriggerSource;
 
 // GUI Component that holds the grid of triggered average panels
@@ -86,7 +86,7 @@ private:
     bool overlayConditions = false;
 
     float post_ms;
-    DisplayMode plotType;
+    DisplayMode plotType = DisplayMode::INDIVIDUAL_TRACES;
 };
 
 } // namespace TriggeredAverage
