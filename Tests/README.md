@@ -2,17 +2,6 @@
 
 This directory contains unit tests for the TriggeredAvg plugin using Google Test.
 
-## Building Tests
-
-The tests are independent of the Open Ephys executable and only require JUCE headers from the plugin-GUI repository. Tests only cover classes that don't depend on Open Ephys-specific code (like `ProcessorHeaders.h`).
-
-## Tested Components
-
-- **SingleTrialBuffer** - JUCE-independent trial storage with raw pointer interface
-- **MultiChannelRingBuffer** - Lock-free circular buffer for multi-channel audio data
-
-**Note:** Components that depend on Open Ephys classes (like `DataCollector`, `TriggeredAvgNode`, etc.) are not tested here as they require linking to the Open Ephys executable.
-
 ### Prerequisites
 
 - CMake 3.23.0 or higher
@@ -25,39 +14,39 @@ The tests are independent of the Open Ephys executable and only require JUCE hea
 
 ```powershell
 # Configure with tests enabled
-cmake -B build -DBUILD_TESTS=ON
+cmake -B Build -DBUILD_TESTS=ON
 
 # Build the tests
-cmake --build build --target triggered-avg_tests --config Debug
+cmake --build Build --target triggered-avg_tests --config Debug
 
 # Run the tests
-ctest --test-dir build -C Debug --output-on-failure
+ctest --test-dir Build -C Debug --output-on-failure
 ```
 
 #### Linux
 
 ```bash
 # Configure with tests enabled
-cmake -B build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -B Build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
 
 # Build the tests
-cmake --build build --target triggered-avg_tests
+cmake --build Build --target triggered-avg_tests
 
 # Run the tests
-ctest --test-dir build --output-on-failure
+ctest --test-dir Build --output-on-failure
 ```
 
 #### macOS
 
 ```bash
 # Configure with tests enabled  
-cmake -B build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -B Build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
 
 # Build the tests
-cmake --build build --target triggered-avg_tests
+cmake --build Build --target triggered-avg_tests
 
 # Run the tests
-ctest --test-dir build --output-on-failure
+ctest --test-dir Build --output-on-failure
 ```
 
 ### Running Tests Directly
@@ -66,17 +55,12 @@ You can also run the test executable directly for more verbose output:
 
 ```bash
 # Windows
-.\build\Tests\Debug\triggered-avg_tests.exe
+.\Build\Tests\Debug\triggered-avg_tests.exe
 
 # Linux/macOS
-./build/Tests/triggered-avg_tests
+./Build/Tests/triggered-avg_tests
 ```
 
-## Test Structure
-
-- **SingleTrialBufferTests.cpp** - Tests for the `SingleTrialBuffer` class (basic functionality with JUCE AudioBuffer)
-- **test_SingleTrialBuffer_RawPointers.cpp** - Tests for `SingleTrialBuffer` using raw pointer interface (JUCE-independent)
-- **test_MultiChannelRingBuffer.cpp** - Tests for the `MultiChannelRingBuffer` class
 
 ## Writing New Tests
 
@@ -104,10 +88,7 @@ To add a new test file:
    };
    ```
 
-**Important:** Avoid including `<ProcessorHeaders.h>` or any Open Ephys-specific headers as they require linking to the Open Ephys executable.
-
 ## Dependencies
 
 - Google Test v1.14.0 (automatically fetched via CMake FetchContent)
 - JUCE headers from plugin-GUI (no linking required)
-- No Open Ephys linking required
