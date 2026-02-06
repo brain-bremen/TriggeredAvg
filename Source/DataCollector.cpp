@@ -98,6 +98,7 @@ void DataCollector::run()
                 // Process request without holding the lock
                 int iRetry = 0;
                 RingBufferReadResult result = RingBufferReadResult::UnknownError;
+                SampleNumber lastKnownSampleNumber = ringBuffer->getCurrentSampleNumber();
 
                 do
                 {
@@ -118,13 +119,31 @@ void DataCollector::run()
                         case RingBufferReadResult::NotEnoughNewData:
                             if (iRetry < maximumNumberOfRetries)
                             {
+                                // Check if time has jumped backwards (e.g., FileReader looping)
+                                SampleNumber currentSampleNumber = ringBuffer->getCurrentSampleNumber();
+                                
                                 LOGD ("[TriggeredAvg] Capture Request retry ",
                                       iRetry,
-                                      " - not enough data available yet, waiting ",
+                                      " - not enough data available yet (triggerSample: ",
+                                      currentRequest.triggerSample,
+                                      ", currentSample: ",
+                                      currentSampleNumber,
+                                      ", lastKnownSample: ",
+                                      lastKnownSampleNumber,
+                                      "), waiting ",
                                       retryIntervalMs,
                                       " ms.")
+                                
+                                if (currentSampleNumber < lastKnownSampleNumber)
+                                {
+                                    LOGD ("[TriggeredAvg] Time jump detected! Aborting capture request.");
+                                    result = RingBufferReadResult::Aborted;
+                                    break;
+                                }
+                                
                                 wait (retryIntervalMs);
                                 iRetry++;
+                                lastKnownSampleNumber = currentSampleNumber;
                             }
                             else
                             {
@@ -137,15 +156,19 @@ void DataCollector::run()
 
                         case RingBufferReadResult::InvalidParameters:
                         case RingBufferReadResult::UnknownError:
-                        case RingBufferReadResult::Aborted:
                             assert (false);
+                            break;
+                        
+                        case RingBufferReadResult::Aborted:
+                            // Valid result - happens when time jumps backwards or max retries exceeded
                             break;
                     }
                 } while (result == RingBufferReadResult::NotEnoughNewData
                          && iRetry < maximumNumberOfRetries && ! threadShouldExit());
 
                 assert (RingBufferReadResult::Success == result
-                        || RingBufferReadResult::DataInRingBufferTooOld == result);
+                        || RingBufferReadResult::DataInRingBufferTooOld == result
+                        || RingBufferReadResult::Aborted == result);
             }
 
             if (averageBuffersWereUpdated)
