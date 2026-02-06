@@ -868,19 +868,22 @@ void SinglePlotPanel::paint (Graphics& g)
         g.setOpacity (trialOpacity);
         g.setColour (Colours::grey);
         
+        // Use faster non-antialiased rendering for individual trials to reduce GPU load
+        PathStrokeType fastStroke (0.5f, PathStrokeType::mitered, PathStrokeType::butt);
+        
         for (const auto& trialPath : cachedTrialPaths)
         {
-            g.strokePath (trialPath, PathStrokeType (0.5f)); // Thinner line for individual trials
+            g.strokePath (trialPath, fastStroke);
         }
         
         g.setOpacity (1.0f);
     }
 
-    // Draw average trace on top
+    // Draw average trace on top with antialiasing for better quality
     if (plotAverage && !cachedAveragePath.isEmpty())
     {
         g.setColour (baseColour);
-        g.strokePath (cachedAveragePath, PathStrokeType (1.5f)); // Slightly thicker for average
+        g.strokePath (cachedAveragePath, PathStrokeType (1.5f));
     }
 
     // Draw zero line

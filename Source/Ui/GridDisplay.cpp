@@ -11,7 +11,7 @@ TriggeredAverage::GridDisplay::~GridDisplay() = default;
 
 void TriggeredAverage::GridDisplay::refresh()
 {
-    // Invalidate cache to force panels to check for new data
+    // Update paths if data has changed (update functions check internally)
     for (auto panel : panels)
     {
         panel->invalidateCache();

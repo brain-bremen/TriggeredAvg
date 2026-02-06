@@ -85,14 +85,16 @@ public:
 
     void refresh() override
     {
+        // Directly refresh when called (from async update when data changes)
         if (m_grid)
             m_grid->refresh();
     }
 
-    /** Timer callback for regular display updates */
+    /** Timer callback - not needed since refresh is called directly on data updates */
     void timerCallback() override
     {
-        refresh();
+        // No-op: refresh is now called directly from handleAsyncUpdate() when data arrives
+        // This eliminates 50 FPS polling
     }
 
     /** Called when the Visualizer's tab becomes visible after being hidden .*/
