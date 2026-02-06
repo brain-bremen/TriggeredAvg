@@ -103,7 +103,7 @@ private:
     void plotWithCustomXLimits (const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
     void plotTrialToPath (Path& path, const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
     void drawZeroLine (Graphics& g) const;
-    bool updateCachedPath();
+    bool updateCachedAveragPath();
     bool updateCachedTrialPaths();
 
     std::unique_ptr<Label> infoLabel;

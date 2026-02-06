@@ -84,7 +84,6 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     xMaxEditor->onFocusLost = [this]() { updateXLimits(); };
     addAndMakeVisible (xMaxEditor.get());
 
-
     // Y-axis limit controls
     yLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
     yLimitsToggle->setFont (FontOptions (12.0f));
@@ -118,37 +117,30 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     yMaxEditor->onFocusLost = [this]() { updateYLimits(); };
     addAndMakeVisible (yMaxEditor.get());
 
-    // Individual trial display controls
-    showTrialsToggle = std::make_unique<UtilityButton> ("OFF");
-    showTrialsToggle->setFont (FontOptions (12.0f));
-    showTrialsToggle->addListener (this);
-    showTrialsToggle->setClickingTogglesState (true);
-    addAndMakeVisible (showTrialsToggle.get());
+    //numTrialsLabel = std::make_unique<Label> ("Num Trials Label", "N:");
+    //numTrialsLabel->setFont (FontOptions (12.0f));
+    //numTrialsLabel->setJustificationType (Justification::centredRight);
+    //addAndMakeVisible (numTrialsLabel.get());
 
-    numTrialsLabel = std::make_unique<Label> ("Num Trials Label", "N:");
-    numTrialsLabel->setFont (FontOptions (12.0f));
-    numTrialsLabel->setJustificationType (Justification::centredRight);
-    addAndMakeVisible (numTrialsLabel.get());
+    //numTrialsSelector = std::make_unique<ComboBox> ("Number of Trials");
+    //for (int i = 1; i <= 50; i += (i < 10 ? 1 : (i < 20 ? 5 : 10)))
+    //    numTrialsSelector->addItem (String (i), i);
+    //numTrialsSelector->setSelectedId (10, dontSendNotification);
+    //numTrialsSelector->addListener (this);
+    //numTrialsSelector->setEnabled (false);  // Initially disabled
+    //addAndMakeVisible (numTrialsSelector.get());
 
-    numTrialsSelector = std::make_unique<ComboBox> ("Number of Trials");
-    for (int i = 1; i <= 50; i += (i < 10 ? 1 : (i < 20 ? 5 : 10)))
-        numTrialsSelector->addItem (String (i), i);
-    numTrialsSelector->setSelectedId (10, dontSendNotification);
-    numTrialsSelector->addListener (this);
-    numTrialsSelector->setEnabled (false);  // Initially disabled
-    addAndMakeVisible (numTrialsSelector.get());
+    //trialOpacityLabel = std::make_unique<Label> ("Opacity Label", "?:");
+    //trialOpacityLabel->setFont (FontOptions (12.0f));
+    //trialOpacityLabel->setJustificationType (Justification::centredRight);
+    //addAndMakeVisible (trialOpacityLabel.get());
 
-    trialOpacityLabel = std::make_unique<Label> ("Opacity Label", "?:");
-    trialOpacityLabel->setFont (FontOptions (12.0f));
-    trialOpacityLabel->setJustificationType (Justification::centredRight);
-    addAndMakeVisible (trialOpacityLabel.get());
-
-    trialOpacitySlider = std::make_unique<Slider> (Slider::LinearHorizontal, Slider::NoTextBox);
-    trialOpacitySlider->setRange (0.1, 1.0, 0.05);
-    trialOpacitySlider->setValue (0.3);
-    trialOpacitySlider->onValueChange = [this]() { updateTrialDisplaySettings(); };
-    trialOpacitySlider->setEnabled (false);  // Initially disabled
-    addAndMakeVisible (trialOpacitySlider.get());
+    //trialOpacitySlider = std::make_unique<Slider> (Slider::LinearHorizontal, Slider::NoTextBox);
+    //trialOpacitySlider->setRange (0.1, 1.0, 0.05);
+    //trialOpacitySlider->setValue (0.3);
+    //trialOpacitySlider->onValueChange = [this]() { updateTrialDisplaySettings(); };
+    //trialOpacitySlider->setEnabled (false);  // Initially disabled
+    //addAndMakeVisible (trialOpacitySlider.get());
 }
 
 void OptionsBar::buttonClicked (Button* button)
@@ -157,7 +149,6 @@ void OptionsBar::buttonClicked (Button* button)
     {
         display->clearPanels();
     }
-
     else if (button == overlayButton.get())
     {
         display->setConditionOverlay (button->getToggleState());
@@ -193,7 +184,8 @@ void OptionsBar::buttonClicked (Button* button)
         {
             if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
             {
-                triggeredAvgNode->getParameter (ParameterNames::use_custom_y_limits)->setNextValue (useCustomYLimits ? 1.0f : 0.0f, false);
+                triggeredAvgNode->getParameter (ParameterNames::use_custom_y_limits)
+                    ->setNextValue (useCustomYLimits ? 1.0f : 0.0f, false);
             }
         }
     }
@@ -221,51 +213,52 @@ void OptionsBar::buttonClicked (Button* button)
         {
             if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
             {
-                triggeredAvgNode->getParameter (ParameterNames::use_custom_x_limits)->setNextValue (useCustomXLimits ? 1.0f : 0.0f, false);
+                triggeredAvgNode->getParameter (ParameterNames::use_custom_x_limits)
+                    ->setNextValue (useCustomXLimits ? 1.0f : 0.0f, false);
             }
         }
     }
-    else if (button == showTrialsToggle.get())
-    {
-        showTrials = button->getToggleState();
+    //else if (button == showTrialsToggle.get())
+    //{
+    //    showTrials = button->getToggleState();
 
-        if (showTrials)
-        {
-            showTrialsToggle->setLabel ("ON");
-            numTrialsSelector->setEnabled (true);
-            trialOpacitySlider->setEnabled (true);
-        }
-        else
-        {
-            showTrialsToggle->setLabel ("OFF");
-            numTrialsSelector->setEnabled (false);
-            trialOpacitySlider->setEnabled (false);
-        }
+    //    if (showTrials)
+    //    {
+    //        showTrialsToggle->setLabel ("ON");
+    //        numTrialsSelector->setEnabled (true);
+    //        trialOpacitySlider->setEnabled (true);
+    //    }
+    //    else
+    //    {
+    //        showTrialsToggle->setLabel ("OFF");
+    //        numTrialsSelector->setEnabled (false);
+    //        trialOpacitySlider->setEnabled (false);
+    //    }
+    //    updateTrialDisplaySettings();
+    //}
+    //else if (button == saveButton.get())
+    //{
+    //    DynamicObject output = display->getInfo();
 
-        updateTrialDisplaySettings();
-    }
-    else if (button == saveButton.get())
-    {
-        DynamicObject output = display->getInfo();
+    // TODO: implement this
+    //    FileChooser chooser ("Save triggered avg to file...", File(), "*.json");
 
-        FileChooser chooser ("Save histogram statistics to file...", File(), "*.json");
+    //    if (chooser.browseForFileToSave (true))
+    //    {
+    //        File file = chooser.getResult();
 
-        if (chooser.browseForFileToSave (true))
-        {
-            File file = chooser.getResult();
+    //        if (file.exists())
+    //            file.deleteFile();
 
-            if (file.exists())
-                file.deleteFile();
+    //        FileOutputStream f (file);
 
-            FileOutputStream f (file);
-
-            output.writeAsJSON (f,
-                                JSON::FormatOptions {}
-                                    .withIndentLevel (5)
-                                    .withSpacing (JSON::Spacing::multiLine)
-                                    .withMaxDecimalPlaces (4));
-        }
-    }
+    //        output.writeAsJSON (f,
+    //                            JSON::FormatOptions {}
+    //                                .withIndentLevel (5)
+    //                                .withSpacing (JSON::Spacing::multiLine)
+    //                                .withMaxDecimalPlaces (4));
+    //    }
+    //}
 }
 
 void OptionsBar::comboBoxChanged (ComboBox* comboBox)
@@ -293,11 +286,6 @@ void OptionsBar::comboBoxChanged (ComboBox* comboBox)
         display->setRowHeight (comboBox->getSelectedId());
 
         canvas->resized();
-    }
-    else if (comboBox == numTrialsSelector.get())
-    {
-        maxTrialsToDisplay = comboBox->getSelectedId();
-        updateTrialDisplaySettings();
     }
 }
 
@@ -331,11 +319,11 @@ void OptionsBar::resized()
     yMaxEditor->setBounds (1120, verticalOffset, 60, 25);
 
     // Individual trial display controls - positioned after Y-axis controls
-    showTrialsToggle->setBounds (1200, verticalOffset, 35, 25);
-    numTrialsLabel->setBounds (1245, verticalOffset, 20, 25);
-    numTrialsSelector->setBounds (1265, verticalOffset, 55, 25);
-    trialOpacityLabel->setBounds (1330, verticalOffset, 20, 25);
-    trialOpacitySlider->setBounds (1350, verticalOffset, 80, 25);
+    //showTrialsToggle->setBounds (1200, verticalOffset, 35, 25);
+    //numTrialsLabel->setBounds (1245, verticalOffset, 20, 25);
+    //numTrialsSelector->setBounds (1265, verticalOffset, 55, 25);
+    //trialOpacityLabel->setBounds (1330, verticalOffset, 20, 25);
+    //trialOpacitySlider->setBounds (1350, verticalOffset, 80, 25);
 }
 
 void OptionsBar::paint (Graphics& g)
@@ -363,7 +351,7 @@ void OptionsBar::paint (Graphics& g)
 
 void OptionsBar::updateYLimits()
 {
-    if (!useCustomYLimits)
+    if (! useCustomYLimits)
         return;
 
     float minY = yMinEditor->getText().getFloatValue();
@@ -393,7 +381,7 @@ void OptionsBar::updateYLimits()
 
 void OptionsBar::updateXLimits()
 {
-    if (!useCustomXLimits)
+    if (! useCustomXLimits)
         return;
 
     float minX = xMinEditor->getText().getFloatValue();
@@ -421,18 +409,18 @@ void OptionsBar::updateXLimits()
     }
 }
 
-void OptionsBar::updateTrialDisplaySettings()
-{
-    // Update local state
-    trialOpacity = (float) trialOpacitySlider->getValue();
-
-    // Propagate settings to all panels via GridDisplay
-    display->setMaxTrialsToDisplay (maxTrialsToDisplay);
-    display->setTrialOpacity (trialOpacity);
-
-    // Note: Trial buffers need to be connected when panels are created
-    // This is handled in TriggeredAvgNode when it calls addContChannel
-}
+//void OptionsBar::updateTrialDisplaySettings()
+//{
+//    // Update local state
+//    trialOpacity = (float) trialOpacitySlider->getValue();
+//
+//    // Propagate settings to all panels via GridDisplay
+//    display->setMaxTrialsToDisplay (maxTrialsToDisplay);
+//    display->setTrialOpacity (trialOpacity);
+//
+//    // Note: Trial buffers need to be connected when panels are created
+//    // This is handled in TriggeredAvgNode when it calls addContChannel
+//}
 
 void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
 {
@@ -457,10 +445,10 @@ void OptionsBar::saveCustomParametersToXml (XmlElement* xml) const
         xml->setAttribute ("y_max", yMaxEditor->getText().getFloatValue());
     }
 
-    // Save individual trial display parameters
-    xml->setAttribute ("show_trials", showTrials);
-    xml->setAttribute ("max_trials_to_display", maxTrialsToDisplay);
-    xml->setAttribute ("trial_opacity", trialOpacity);
+    //// Save individual trial display parameters
+    //xml->setAttribute ("show_trials", showTrials);
+    //xml->setAttribute ("max_trials_to_display", maxTrialsToDisplay);
+    //xml->setAttribute ("trial_opacity", trialOpacity);
 }
 
 void OptionsBar::loadCustomParametersFromXml (XmlElement* xml)
@@ -506,15 +494,15 @@ void OptionsBar::loadCustomParametersFromXml (XmlElement* xml)
         yLimitsToggle->setToggleState (false, sendNotification);
     }
 
-    // Load individual trial display parameters
-    showTrials = xml->getBoolAttribute ("show_trials", false);
-    maxTrialsToDisplay = xml->getIntAttribute ("max_trials_to_display", 10);
-    trialOpacity = (float) xml->getDoubleAttribute ("trial_opacity", 0.3);
+    //// Load individual trial display parameters
+    //showTrials = xml->getBoolAttribute ("show_trials", false);
+    //maxTrialsToDisplay = xml->getIntAttribute ("max_trials_to_display", 10);
+    //trialOpacity = (float) xml->getDoubleAttribute ("trial_opacity", 0.3);
 
-    // Update UI controls
-    showTrialsToggle->setToggleState (showTrials, sendNotification);
-    numTrialsSelector->setSelectedId (maxTrialsToDisplay, sendNotification);
-    trialOpacitySlider->setValue (trialOpacity, sendNotification);
+    //// Update UI controls
+    //showTrialsToggle->setToggleState (showTrials, sendNotification);
+    //numTrialsSelector->setSelectedId (maxTrialsToDisplay, sendNotification);
+    //trialOpacitySlider->setValue (trialOpacity, sendNotification);
 }
 
 TriggeredAvgCanvas::TriggeredAvgCanvas (TriggeredAvgNode* processor_)
@@ -543,7 +531,7 @@ TriggeredAvgCanvas::TriggeredAvgCanvas (TriggeredAvgNode* processor_)
 
     // Start timer for regular display updates (60 Hz)
     // Note: Visualizer already inherits from Timer, so we use the inherited startTimer
-    startTimer (16);  // ~60 FPS
+    startTimer (16); // ~60 FPS
 }
 
 void TriggeredAvgCanvas::refreshState() { resized(); }
@@ -611,7 +599,8 @@ void TriggeredAvgCanvas::updateConditionName (const TriggerSource* source)
     m_grid->updateConditionName (source);
 }
 
-void TriggeredAvgCanvas::setTrialBuffersForSource (const TriggerSource* source, const SingleTrialBuffer* trialBuffer)
+void TriggeredAvgCanvas::setTrialBuffersForSource (const TriggerSource* source,
+                                                   const SingleTrialBuffer* trialBuffer)
 {
     m_grid->setTrialBuffersForSource (source, trialBuffer);
 }

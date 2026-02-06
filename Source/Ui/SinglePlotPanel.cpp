@@ -92,7 +92,7 @@ void SinglePlotPanel::resized()
     if (cachedPanelWidth != panelWidthPx)
     {
         cachedPanelWidth = panelWidthPx;
-        updateCachedPath();
+        updateCachedAveragPath();
     }
 
     infoLabel->setBounds (labelOffset, 10, 150, 30);
@@ -173,7 +173,7 @@ void SinglePlotPanel::setYLimits (float minY, float maxY)
     useCustomYLimits = true;
     cachedNumTrials = -1;
     cachedTrialCount = -1;
-    updateCachedPath();
+    updateCachedAveragPath();
     updateCachedTrialPaths();
     repaint();
 }
@@ -183,7 +183,7 @@ void SinglePlotPanel::resetYLimits()
     useCustomYLimits = false;
     cachedNumTrials = -1;
     cachedTrialCount = -1;
-    updateCachedPath();
+    updateCachedAveragPath();
     updateCachedTrialPaths();
     repaint();
 }
@@ -200,7 +200,7 @@ void SinglePlotPanel::setXLimits (float minX, float maxX)
     useCustomXLimits = true;
     cachedNumTrials = -1;
     cachedTrialCount = -1;
-    updateCachedPath();
+    updateCachedAveragPath();
     updateCachedTrialPaths();
     repaint();
 }
@@ -210,7 +210,7 @@ void SinglePlotPanel::resetXLimits()
     useCustomXLimits = false;
     cachedNumTrials = -1;
     cachedTrialCount = -1;
-    updateCachedPath();
+    updateCachedAveragPath();
     updateCachedTrialPaths();
     repaint();
 }
@@ -220,7 +220,7 @@ void SinglePlotPanel::setWindowSizeMs (float pre, float post)
     pre_ms = pre;
     post_ms = post;
     cachedNumTrials = -1;
-    updateCachedPath();
+    updateCachedAveragPath();
     repaint();
 }
 
@@ -286,14 +286,14 @@ void SinglePlotPanel::setOverlayIndex (int index)
 void SinglePlotPanel::update()
 {
     numTrials++;
-    updateCachedPath();
+    updateCachedAveragPath();
     updateCachedTrialPaths();
     repaint();
 }
 
 void SinglePlotPanel::invalidateCache()
 {
-    updateCachedPath();
+    updateCachedAveragPath();
     updateCachedTrialPaths();
     repaint();
 }
@@ -785,7 +785,7 @@ bool SinglePlotPanel::updateCachedTrialPaths()
     return true;
 }
 
-bool SinglePlotPanel::updateCachedPath()
+bool SinglePlotPanel::updateCachedAveragPath()
 {
     if (!m_averageBuffer)
         return false;
