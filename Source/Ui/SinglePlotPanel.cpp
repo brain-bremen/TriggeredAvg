@@ -172,7 +172,9 @@ void SinglePlotPanel::setYLimits (float minY, float maxY)
     yMax = maxY;
     useCustomYLimits = true;
     cachedNumTrials = -1;
+    cachedTrialCount = -1;
     updateCachedPath();
+    updateCachedTrialPaths();
     repaint();
 }
 
@@ -180,7 +182,9 @@ void SinglePlotPanel::resetYLimits()
 {
     useCustomYLimits = false;
     cachedNumTrials = -1;
+    cachedTrialCount = -1;
     updateCachedPath();
+    updateCachedTrialPaths();
     repaint();
 }
 
@@ -195,7 +199,9 @@ void SinglePlotPanel::setXLimits (float minX, float maxX)
     xMax = maxX;
     useCustomXLimits = true;
     cachedNumTrials = -1;
+    cachedTrialCount = -1;
     updateCachedPath();
+    updateCachedTrialPaths();
     repaint();
 }
 
@@ -203,7 +209,9 @@ void SinglePlotPanel::resetXLimits()
 {
     useCustomXLimits = false;
     cachedNumTrials = -1;
+    cachedTrialCount = -1;
     updateCachedPath();
+    updateCachedTrialPaths();
     repaint();
 }
 
