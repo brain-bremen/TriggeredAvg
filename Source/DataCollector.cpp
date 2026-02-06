@@ -45,6 +45,19 @@ void DataStore::setMaxTrialsToStore (int n)
     }
 }
 
+void DataStore::ResetAllBuffers()
+{
+    auto lock = GetLock();
+    for (auto& [source, avgBuffer] : m_averageBuffers)
+    {
+        avgBuffer.resetTrials();
+    }
+    for (auto& [source, trialBuffer] : m_singleTrialBuffers)
+    {
+        trialBuffer.clear();
+    }
+}
+
 DataCollector::DataCollector (TriggeredAvgNode* viewer_,
                               MultiChannelRingBuffer* buffer_,
                               DataStore* datastore_)

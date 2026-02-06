@@ -113,6 +113,8 @@ public:
         m_singleTrialBuffers.clear();
     }
 
+    void ResetAllBuffers();
+
     void setMaxTrialsToStore (int n);
 
 private:

@@ -140,6 +140,7 @@ void SinglePlotPanel::clear()
     cachedAveragePath.clear();
     cachedTrialPaths.clear();
     cachedTrialCount = -1;
+    trialCounter->setText ("0", dontSendNotification);
     repaint();
 }
 

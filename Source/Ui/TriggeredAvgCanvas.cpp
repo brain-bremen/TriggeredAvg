@@ -2,6 +2,7 @@
 #include "GridDisplay.h"
 #include "TimeAxis.h"
 #include "TriggeredAvgNode.h"
+#include "DataCollector.h"
 
 using namespace TriggeredAverage;
 
@@ -148,6 +149,18 @@ void OptionsBar::buttonClicked (Button* button)
     if (button == clearButton.get())
     {
         display->clearPanels();
+        
+        // Also clear the actual data buffers (reset trials, don't destroy buffer objects)
+        if (auto* processor = canvas->getProcessor())
+        {
+            if (auto* triggeredAvgNode = dynamic_cast<TriggeredAvgNode*> (processor))
+            {
+                if (auto* dataStore = triggeredAvgNode->getDataStore())
+                {
+                    dataStore->ResetAllBuffers();
+                }
+            }
+        }
     }
     else if (button == overlayButton.get())
     {
