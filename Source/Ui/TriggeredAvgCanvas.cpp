@@ -12,7 +12,6 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
       timescale (timescale_)
 {
     clearButton = std::make_unique<UtilityButton> ("CLEAR");
-
     clearButton->setFont (FontOptions (12.0f));
     clearButton->addListener (this);
     clearButton->setClickingTogglesState (false);
@@ -24,20 +23,11 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     saveButton->setClickingTogglesState (false);
     addAndMakeVisible (saveButton.get());
 
-    plotTypeSelector = std::make_unique<ComboBox> ("Plot Type Selector");
-
-    plotTypeSelector->addItemList (DisplayModeStrings, 1);
-
-    plotTypeSelector->setSelectedId (1, dontSendNotification);
-    plotTypeSelector->addListener (this);
-    addAndMakeVisible (plotTypeSelector.get());
-
-    columnNumberSelector = std::make_unique<ComboBox> ("Column Number Selector");
-    for (int i = 1; i < 7; i++)
-        columnNumberSelector->addItem (String (i), i);
-    columnNumberSelector->setSelectedId (1, dontSendNotification);
-    columnNumberSelector->addListener (this);
-    addAndMakeVisible (columnNumberSelector.get());
+    // Row height controls
+    rowHeightLabel = std::make_unique<Label> ("Row Height Label", "Row Height");
+    rowHeightLabel->setFont (FontOptions (20.0f));
+    rowHeightLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (rowHeightLabel.get());
 
     rowHeightSelector = std::make_unique<ComboBox> ("Row Height Selector");
     for (int i = 2; i < 6; i++)
@@ -46,28 +36,64 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     rowHeightSelector->addListener (this);
     addAndMakeVisible (rowHeightSelector.get());
 
+    // Column number controls
+    columnNumberLabel = std::make_unique<Label> ("Column Number Label", "Columns");
+    columnNumberLabel->setFont (FontOptions (20.0f));
+    columnNumberLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (columnNumberLabel.get());
+
+    columnNumberSelector = std::make_unique<ComboBox> ("Column Number Selector");
+    for (int i = 1; i < 7; i++)
+        columnNumberSelector->addItem (String (i), i);
+    columnNumberSelector->setSelectedId (1, dontSendNotification);
+    columnNumberSelector->addListener (this);
+    addAndMakeVisible (columnNumberSelector.get());
+
+    // Overlay controls
+    overlayLabel = std::make_unique<Label> ("Overlay Label", "Overlay");
+    overlayLabel->setFont (FontOptions (20.0f));
+    overlayLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (overlayLabel.get());
+
     overlayButton = std::make_unique<UtilityButton> ("OFF");
     overlayButton->setFont (FontOptions (12.0f));
     overlayButton->addListener (this);
     overlayButton->setClickingTogglesState (true);
     addAndMakeVisible (overlayButton.get());
 
+    // Plot type controls
+    plotTypeLabel = std::make_unique<Label> ("Plot Type Label", "Plot Type");
+    plotTypeLabel->setFont (FontOptions (20.0f));
+    plotTypeLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (plotTypeLabel.get());
+
+    plotTypeSelector = std::make_unique<ComboBox> ("Plot Type Selector");
+    plotTypeSelector->addItemList (DisplayModeStrings, 1);
+    plotTypeSelector->setSelectedId (1, dontSendNotification);
+    plotTypeSelector->addListener (this);
+    addAndMakeVisible (plotTypeSelector.get());
+
     // X-axis limit controls
+    xLimitsLabel = std::make_unique<Label> ("X Limits Label", "X-Axis (ms)");
+    xLimitsLabel->setFont (FontOptions (20.0f));
+    xLimitsLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (xLimitsLabel.get());
+
     xLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
     xLimitsToggle->setFont (FontOptions (12.0f));
     xLimitsToggle->addListener (this);
     xLimitsToggle->setClickingTogglesState (true);
     addAndMakeVisible (xLimitsToggle.get());
 
-    xMinLabel = std::make_unique<Label> ("X Min Label", "Min:");
+    xMinLabel = std::make_unique<Label> ("X Limits (ms)", "X LIM (ms)");
     xMinLabel->setFont (FontOptions (12.0f));
     xMinLabel->setJustificationType (Justification::centredRight);
     addAndMakeVisible (xMinLabel.get());
 
-    xMaxLabel = std::make_unique<Label> ("X Max Label", "Max:");
+    xMaxLabel = std::make_unique<Label> ("X Max Label", "X Max (ms):");
     xMaxLabel->setFont (FontOptions (12.0f));
     xMaxLabel->setJustificationType (Justification::centredRight);
-    addAndMakeVisible (xMaxLabel.get());
+    //addAndMakeVisible (xMaxLabel.get());
 
     xMinEditor = std::make_unique<TextEditor> ("X Min");
     xMinEditor->setText ("-50.0");
@@ -86,27 +112,23 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     addAndMakeVisible (xMaxEditor.get());
 
     // Y-axis limit controls
+    yLimitsLabel = std::make_unique<Label> ("Y Limits Label", "Y-Axis (uV/V)");
+    yLimitsLabel->setFont (FontOptions (20.0f));
+    yLimitsLabel->setJustificationType (Justification::centredRight);
+    addAndMakeVisible (yLimitsLabel.get());
+
     yLimitsToggle = std::make_unique<UtilityButton> ("AUTO");
     yLimitsToggle->setFont (FontOptions (12.0f));
     yLimitsToggle->addListener (this);
     yLimitsToggle->setClickingTogglesState (true);
     addAndMakeVisible (yLimitsToggle.get());
 
-    yMinLabel = std::make_unique<Label> ("Y Min Label", "Min:");
-    yMinLabel->setFont (FontOptions (12.0f));
-    yMinLabel->setJustificationType (Justification::centredRight);
-    addAndMakeVisible (yMinLabel.get());
-
-    yMaxLabel = std::make_unique<Label> ("Y Max Label", "Max:");
-    yMaxLabel->setFont (FontOptions (12.0f));
-    yMaxLabel->setJustificationType (Justification::centredRight);
-    addAndMakeVisible (yMaxLabel.get());
-
     yMinEditor = std::make_unique<TextEditor> ("Y Min");
     yMinEditor->setText ("-100.0");
     yMinEditor->setFont (FontOptions (12.0f));
     yMinEditor->setEnabled (false);
     yMinEditor->onReturnKey = [this]() { updateYLimits(); };
+
     yMinEditor->onFocusLost = [this]() { updateYLimits(); };
     addAndMakeVisible (yMinEditor.get());
 
@@ -305,38 +327,75 @@ void OptionsBar::comboBoxChanged (ComboBox* comboBox)
 void OptionsBar::resized()
 {
     const int verticalOffset = 7;
+    const int controlHeight = 25;
+    const int spacing = 5;
 
-    clearButton->setBounds (getWidth() - 100, verticalOffset, 70, 25);
-    saveButton->setBounds (getWidth() - 180, verticalOffset, 70, 25);
+    FlexBox mainLayout;
+    mainLayout.flexDirection = FlexBox::Direction::row;
+    mainLayout.justifyContent = FlexBox::JustifyContent::flexStart;
+    mainLayout.alignItems = FlexBox::AlignItems::center;
 
-    plotTypeSelector->setBounds (440, verticalOffset, 150, 25);
+    // Helper lambda to add spacing
+    auto addSpacer = [&mainLayout](int width) {
+        mainLayout.items.add (FlexItem().withWidth (width).withHeight (1));
+    };
 
-    rowHeightSelector->setBounds (60, verticalOffset, 80, 25);
+    // Helper lambda to add a control with standard height
+    auto addControl = [&mainLayout, controlHeight](Component& comp, int width) {
+        mainLayout.items.add (FlexItem (comp).withWidth (width).withHeight (controlHeight));
+    };
 
-    columnNumberSelector->setBounds (200, verticalOffset, 50, 25);
+    // Left section: Layout controls
+    addControl (*rowHeightLabel, 95);
+    addSpacer (spacing);
+    addControl (*rowHeightSelector, 80);
+    addSpacer (spacing * 3);
+    
+    addControl (*columnNumberLabel, 75);
+    addSpacer (spacing);
+    addControl (*columnNumberSelector, 50);
+    addSpacer (spacing * 3);
+    
+    addControl (*overlayLabel, 70);
+    addSpacer (spacing);
+    addControl (*overlayButton, 45);
+    addSpacer (spacing * 5);
 
-    overlayButton->setBounds (340, verticalOffset, 35, 25);
+    // Plot type selector
+    addControl (*plotTypeLabel, 80);
+    addSpacer (spacing);
+    addControl (*plotTypeSelector, 150);
+    addSpacer (spacing * 5);
 
-    // X-axis limit controls
-    xLimitsToggle->setBounds (610, verticalOffset, 65, 25);
-    xMinLabel->setBounds (685, verticalOffset, 35, 25);
-    xMinEditor->setBounds (720, verticalOffset, 60, 25);
-    xMaxLabel->setBounds (790, verticalOffset, 35, 25);
-    xMaxEditor->setBounds (825, verticalOffset, 60, 25);
+    // X-axis controls group
+    addControl (*xLimitsLabel, 95);
+    addSpacer (spacing);
+    addControl (*xLimitsToggle, 65);
+    addSpacer (spacing);
+    addControl (*xMinEditor, 60);
+    addSpacer (spacing);
+    addControl (*xMaxEditor, 60);
+    addSpacer (spacing * 5);
 
-    // Y-axis limit controls - positioned to the right of X-axis controls
-    yLimitsToggle->setBounds (905, verticalOffset, 65, 25);
-    yMinLabel->setBounds (980, verticalOffset, 35, 25);
-    yMinEditor->setBounds (1015, verticalOffset, 60, 25);
-    yMaxLabel->setBounds (1085, verticalOffset, 35, 25);
-    yMaxEditor->setBounds (1120, verticalOffset, 60, 25);
+    // Y-axis controls group
+    addControl (*yLimitsLabel, 105);
+    addSpacer (spacing);
+    addControl (*yLimitsToggle, 65);
+    addSpacer (spacing);
+    addControl (*yMinEditor, 60);
+    addSpacer (spacing);
+    addControl (*yMaxEditor, 60);
 
-    // Individual trial display controls - positioned after Y-axis controls
-    //showTrialsToggle->setBounds (1200, verticalOffset, 35, 25);
-    //numTrialsLabel->setBounds (1245, verticalOffset, 20, 25);
-    //numTrialsSelector->setBounds (1265, verticalOffset, 55, 25);
-    //trialOpacityLabel->setBounds (1330, verticalOffset, 20, 25);
-    //trialOpacitySlider->setBounds (1350, verticalOffset, 80, 25);
+    // Flexible spacer to push buttons to the right
+    mainLayout.items.add (FlexItem().withFlex (1).withHeight (controlHeight));
+
+    // Right section: Action buttons
+    addControl (*saveButton, 70);
+    addSpacer (spacing);
+    addControl (*clearButton, 70);
+
+    // Perform layout
+    mainLayout.performLayout (getLocalBounds().withTrimmedTop (verticalOffset).withTrimmedLeft (5).withTrimmedRight (5));
 }
 
 void OptionsBar::paint (Graphics& g)
@@ -346,20 +405,20 @@ void OptionsBar::paint (Graphics& g)
 
     const int verticalOffset = 4;
 
-    g.drawText ("Row", 0, verticalOffset, 53, 15, Justification::centredRight, false);
-    g.drawText ("Height", 0, verticalOffset + 15, 53, 15, Justification::centredRight, false);
-    g.drawText ("Num", 150, verticalOffset, 43, 15, Justification::centredRight, false);
-    g.drawText ("Cols", 150, verticalOffset + 15, 43, 15, Justification::centredRight, false);
-    g.drawText ("Overlay", 240, verticalOffset, 93, 15, Justification::centredRight, false);
-    g.drawText ("Conditions", 240, verticalOffset + 15, 93, 15, Justification::centredRight, false);
-    g.drawText ("Plot", 390, verticalOffset, 43, 15, Justification::centredRight, false);
-    g.drawText ("Type", 390, verticalOffset + 15, 43, 15, Justification::centredRight, false);
-    g.drawText ("X-Axis", 600, verticalOffset, 70, 15, Justification::centred, false);
-    g.drawText ("Limits", 600, verticalOffset + 15, 70, 15, Justification::centred, false);
-    g.drawText ("Y-Axis", 895, verticalOffset, 70, 15, Justification::centred, false);
-    g.drawText ("Limits", 895, verticalOffset + 15, 70, 15, Justification::centred, false);
-    g.drawText ("Show", 1185, verticalOffset, 50, 15, Justification::centred, false);
-    g.drawText ("Trials", 1185, verticalOffset + 15, 50, 15, Justification::centred, false);
+    //g.drawText ("Row", 0, verticalOffset, 53, 15, Justification::centredRight, false);
+    //g.drawText ("Height", 0, verticalOffset + 15, 53, 15, Justification::centredRight, false);
+    //g.drawText ("Num", 150, verticalOffset, 43, 15, Justification::centredRight, false);
+    //g.drawText ("Cols", 150, verticalOffset + 15, 43, 15, Justification::centredRight, false);
+    //g.drawText ("Overlay", 240, verticalOffset, 93, 15, Justification::centredRight, false);
+    //g.drawText ("Conditions", 240, verticalOffset + 15, 93, 15, Justification::centredRight, false);
+    //g.drawText ("Plot", 390, verticalOffset, 43, 15, Justification::centredRight, false);
+    //g.drawText ("Type", 390, verticalOffset + 15, 43, 15, Justification::centredRight, false);
+    //g.drawText ("X-Axis", 600, verticalOffset, 70, 15, Justification::centred, false);
+    //g.drawText ("Limits", 600, verticalOffset + 15, 70, 15, Justification::centred, false);
+    //g.drawText ("Y-Axis", 895, verticalOffset, 70, 15, Justification::centred, false);
+    //g.drawText ("Limits", 895, verticalOffset + 15, 70, 15, Justification::centred, false);
+    //g.drawText ("Show", 1185, verticalOffset, 50, 15, Justification::centred, false);
+    //g.drawText ("Trials", 1185, verticalOffset + 15, 50, 15, Justification::centred, false);
 }
 
 void OptionsBar::updateYLimits()

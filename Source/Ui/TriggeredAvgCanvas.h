@@ -38,12 +38,21 @@ private:
 
     std::unique_ptr<UtilityButton> clearButton;
     std::unique_ptr<UtilityButton> saveButton;
+    
+    std::unique_ptr<Label> plotTypeLabel;
     std::unique_ptr<ComboBox> plotTypeSelector;
+    
+    std::unique_ptr<Label> columnNumberLabel;
     std::unique_ptr<ComboBox> columnNumberSelector;
+    
+    std::unique_ptr<Label> rowHeightLabel;
     std::unique_ptr<ComboBox> rowHeightSelector;
+    
+    std::unique_ptr<Label> overlayLabel;
     std::unique_ptr<UtilityButton> overlayButton;
 
     // X-axis limit controls
+    std::unique_ptr<Label> xLimitsLabel;
     std::unique_ptr<UtilityButton> xLimitsToggle; 
     std::unique_ptr<Label> xMinLabel;
     std::unique_ptr<Label> xMaxLabel;
@@ -53,9 +62,8 @@ private:
 
 
     // Y-axis limit controls
+    std::unique_ptr<Label> yLimitsLabel;
     std::unique_ptr<UtilityButton> yLimitsToggle;
-    std::unique_ptr<Label> yMinLabel;
-    std::unique_ptr<Label> yMaxLabel;
     std::unique_ptr<TextEditor> yMinEditor;
     std::unique_ptr<TextEditor> yMaxEditor;
 

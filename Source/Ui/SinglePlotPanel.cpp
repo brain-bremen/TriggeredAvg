@@ -274,32 +274,11 @@ void SinglePlotPanel::drawBackground (bool shouldDraw)
     shouldDrawBackground = shouldDraw;
 
     infoLabel->setVisible (shouldDrawBackground);
-    
-    // Update opacity when background drawing changes (for overlay mode)
-    if (overlayMode && !shouldDrawBackground)
-    {
-        setOpaque (false);
-    }
-    else
-    {
-        setOpaque (true);
-    }
 }
 
 void SinglePlotPanel::setOverlayMode (bool shouldOverlay)
 { 
     overlayMode = shouldOverlay;
-    
-    // When in overlay mode and not drawing background, make component transparent
-    // so it doesn't block the panels underneath
-    if (overlayMode && !shouldDrawBackground)
-    {
-        setOpaque (false);
-    }
-    else
-    {
-        setOpaque (true);
-    }
 }
 
 void SinglePlotPanel::setOverlayIndex (int index)

@@ -15,8 +15,16 @@ TriggeredAvgEditor::TriggeredAvgEditor (GenericProcessor* parentNode)
       currentConfigWindow (nullptr)
 
 {
-    addBoundedValueParameterEditor (Parameter::PROCESSOR_SCOPE, ParameterNames::pre_ms, 20, 30);
-    addBoundedValueParameterEditor (Parameter::PROCESSOR_SCOPE, ParameterNames::post_ms, 20, 78);
+    // TRIGGERS button on top
+    configureButton = std::make_unique<UtilityButton> ("TRIGGERS");
+    configureButton->setFont (FontOptions (14.0f));
+    configureButton->addListener (this);
+    configureButton->setBounds (20, 30, 170, 25);
+    addAndMakeVisible (configureButton.get());
+
+    // Pre MS and Post MS editors side by side
+    addBoundedValueParameterEditor (Parameter::PROCESSOR_SCOPE, ParameterNames::pre_ms, 20, 55);
+    addBoundedValueParameterEditor (Parameter::PROCESSOR_SCOPE, ParameterNames::post_ms, 110, 55);
 
     for (auto& p : { ParameterNames::pre_ms, ParameterNames::post_ms })
     {
@@ -25,11 +33,12 @@ TriggeredAvgEditor::TriggeredAvgEditor (GenericProcessor* parentNode)
         ed->setBounds (ed->getX(), ed->getY(), 80, 36);
     }
 
-    configureButton = std::make_unique<UtilityButton> ("CONFIGURE");
-    configureButton->setFont (FontOptions (14.0f));
-    configureButton->addListener (this);
-    configureButton->setBounds (115, 85, 80, 30);
-    addAndMakeVisible (configureButton.get());
+    // Number of trials parameter
+    addBoundedValueParameterEditor (
+        Parameter::PROCESSOR_SCOPE, ParameterNames::max_trials, 20, 100);
+    auto* trialsEd = getParameterEditor (ParameterNames::max_trials);
+    trialsEd->setLayout (ParameterEditor::Layout::nameOnLeft);
+    trialsEd->setBounds (trialsEd->getX(), trialsEd->getY(), 170, 20);
 }
 
 Visualizer* TriggeredAvgEditor::createNewCanvas()
@@ -71,18 +80,19 @@ void TriggeredAvgEditor::updateSettings()
     for (int i = 0; i < proc->getTotalContinuousChannels(); i++)
     {
         const ContinuousChannel* channel = proc->getContinuousChannel (i);
-        
+
         for (auto source : proc->getTriggerSources().getAll())
         {
             canvas->addContChannel (
                 channel, source, i, store->getRefToAverageBufferForTriggerSource (source));
         }
     }
-    
+
     // Set trial buffers for all sources
     for (auto source : proc->getTriggerSources().getAll())
     {
-        canvas->setTrialBuffersForSource (source, store->getRefToTrialBufferForTriggerSource (source));
+        canvas->setTrialBuffersForSource (source,
+                                          store->getRefToTrialBufferForTriggerSource (source));
     }
     canvas->setWindowSizeMs (proc->getPreWindowSizeMs(), proc->getPostWindowSizeMs());
     canvas->resized();

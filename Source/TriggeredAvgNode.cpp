@@ -43,23 +43,25 @@ TriggeredAvgNode::TriggeredAvgNode()
 {
     addFloatParameter (Parameter::PROCESSOR_SCOPE,
                        ParameterNames::pre_ms,
-                       "Pre MS",
+                       "Pre Trig",
                        "Size of the pre-trigger window in ms",
                        "ms",
                        250.0f,
                        0.0f,
                        5000.0f,
-                       10.0f);
+                       10.0f,
+                       true);
 
     addFloatParameter (Parameter::PROCESSOR_SCOPE,
                        ParameterNames::post_ms,
-                       "Post MS",
+                       "Post Trig",
                        "Size of the post-trigger window in ms",
                        "ms",
                        750.0f,
                        10.0f,
                        5000.0f,
-                       10.0f);
+                       10.0f,
+                       true);
 
     addIntParameter (Parameter::PROCESSOR_SCOPE,
                      ParameterNames::max_trials,
@@ -67,7 +69,8 @@ TriggeredAvgNode::TriggeredAvgNode()
                      "Maximum number of single trials to store per condition",
                      10,
                      1,
-                     100);
+                     50,
+                     true);
 
     addIntParameter (Parameter::PROCESSOR_SCOPE,
                      ParameterNames::trigger_line,
@@ -143,7 +146,6 @@ TriggeredAvgNode::TriggeredAvgNode()
 
 TriggeredAvgNode::~TriggeredAvgNode() { shutdownThreads(); }
 
-
 AudioProcessorEditor* TriggeredAvgNode::createEditor()
 {
     editor = std::make_unique<TriggeredAvgEditor> (this);
@@ -156,7 +158,14 @@ void TriggeredAvgNode::parameterValueChanged (Parameter* param)
     // Update trial buffers when max trials changes
     if (param->getName().equalsIgnoreCase (max_trials))
     {
-        // TODO:
+        const int maxTrials = (int) param->getValue();
+        const int totalSamples = getNumberOfSamples();
+        m_dataStore->ResizeAllAverageBuffers(getTotalNumInputChannels(), totalSamples, maxTrials);
+        
+        if (m_canvas)
+        {
+            triggerAsyncUpdate();
+        }
     }
     else if (param->getName().equalsIgnoreCase (trigger_line))
     {
