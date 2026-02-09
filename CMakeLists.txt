@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23.0)
 
-set(PLUGIN_NAME triggered-avg)
+set(PLUGIN_NAME TriggeredAvg)
 project(OE_PLUGIN_${PLUGIN_NAME})
 
 # Option to build tests
@@ -118,6 +118,9 @@ endif()
 
 # Add tests subdirectory if BUILD_TESTS is enabled
 if(BUILD_TESTS)
+    # Enable testing at the top level so CTest can discover tests
+    enable_testing()
+
     # Build the main GUI project with tests enabled to get gui_testable_source and test_helpers
     set(BUILD_TESTS ON CACHE BOOL "Enable testing" FORCE)
     set(OE_DONT_CHECK_BUILD_PATH TRUE CACHE BOOL "Disable build path check" FORCE)

@@ -93,14 +93,14 @@ endif()
 
 # Set the output directory to match the main project's test structure
 set_target_properties(${PLUGIN_NAME}_tests PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/TestBin/triggered-avg
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/TestBin/${PLUGIN_NAME}
 )
 
 # Copy DLLs from common directory to our test directory after build
 add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_BINARY_DIR}/TestBin/common
-    ${CMAKE_BINARY_DIR}/TestBin/triggered-avg
+    ${CMAKE_BINARY_DIR}/TestBin/${PLUGIN_NAME}
 )
 
 # Ensure DLLs are built before our tests
@@ -110,7 +110,7 @@ add_dependencies(${PLUGIN_NAME}_tests gui_testable_source test_helpers)
 gtest_discover_tests(${PLUGIN_NAME}_tests
     XML_OUTPUT_DIR "${CMAKE_BINARY_DIR}/test-results"
     DISCOVERY_TIMEOUT 30
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/TestBin/triggered-avg
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/TestBin/${PLUGIN_NAME}
     PROPERTIES
         LABELS "unit"
 )
@@ -120,11 +120,11 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT $
 
 # Set Visual Studio debugger working directory to where DLLs are located
 set_target_properties(${PLUGIN_NAME}_tests PROPERTIES
-    VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/TestBin/triggered-avg
+    VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/TestBin/${PLUGIN_NAME}
 )
 
 # Print some helpful information
 message(STATUS "Triggered Avg Tests Configuration:")
 message(STATUS "  GUI Base Directory: ${GUI_BASE_DIR}")
-message(STATUS "  Test Output Directory: ${CMAKE_BINARY_DIR}/TestBin/triggered-avg")
+message(STATUS "  Test Output Directory: ${CMAKE_BINARY_DIR}/TestBin/${PLUGIN_NAME}")
 message(STATUS "  Plugin Sources: ${TRIGGERED_AVG_SOURCES}")

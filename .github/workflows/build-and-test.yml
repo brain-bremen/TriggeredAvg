@@ -55,7 +55,7 @@ jobs:
       - name: Configure plugin
         run: |
           cd plugin
-          cmake -B Build -G "Visual Studio 17 2022" -A x64 -DGUI_BASE_DIR="${{ github.workspace }}/plugin-GUI" -DBUILD_TESTS=ON
+          cmake -B Build -G "Visual Studio 17 2022" -A x64 -DGUI_BASE_DIR="${{ github.workspace }}/plugin-GUI"
 
       - name: Build plugin
         run: |
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: triggered-avg-plugin-windows-${{ matrix.build-type }}
-          path: plugin/Build/${{ matrix.build-type }}/triggered-avg.dll
+          path: plugin/Build/${{ matrix.build-type }}/TriggeredAvg.dll
           if-no-files-found: error
 
   build-linux:
