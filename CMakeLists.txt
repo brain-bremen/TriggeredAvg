@@ -1,7 +1,20 @@
 cmake_minimum_required(VERSION 3.23.0)
 
 set(PLUGIN_NAME TriggeredAvg)
-project(OE_PLUGIN_${PLUGIN_NAME})
+
+# Plugin version information
+set(PLUGIN_VERSION_MAJOR 1)
+set(PLUGIN_VERSION_MINOR 0)
+set(PLUGIN_VERSION_PATCH 0)
+set(PLUGIN_VERSION "${PLUGIN_VERSION_MAJOR}.${PLUGIN_VERSION_MINOR}.${PLUGIN_VERSION_PATCH}")
+
+# Open Ephys GUI API version this plugin is built for
+set(OE_GUI_API_VERSION 10)
+# Optional: Set the GUI version if known (e.g., 0.6.5)
+# This can be auto-detected or manually set
+set(OE_GUI_VERSION "0.6.x" CACHE STRING "Open Ephys GUI version")
+
+project(OE_PLUGIN_${PLUGIN_NAME} VERSION ${PLUGIN_VERSION})
 
 # Option to build tests
 option(BUILD_TESTS "Build the test suite" ON)
@@ -42,10 +55,41 @@ message(DEBUG "GUI_BIN_DIR will be: " ${GUI_BASE_DIR}/Build/[Debug|Release])
 add_subdirectory(${TRIGGERED_AVG_SOURCE_PATH}) # sets TRIGGERED_AVG_HEADERS and TRIGGERED_AVG_SOURCES
 MESSAGE(DEBUG "TRIGGERED_AVG_HEADERS: ${TRIGGERED_AVG_HEADERS}")
 MESSAGE(DEBUG "TRIGGERED_AVG_SOURCES: ${TRIGGERED_AVG_SOURCES}")
+
+# Get GUI_VERSION from the plugin-GUI CMakeLists.txt
+if(EXISTS "${GUI_BASE_DIR}/CMakeLists.txt")
+    # Create a temporary scope to read GUI_VERSION without building anything
+    file(READ "${GUI_BASE_DIR}/CMakeLists.txt" GUI_CMAKE_CONTENT)
+    string(REGEX MATCH "set\\(GUI_VERSION ([^)]+)\\)" _ "${GUI_CMAKE_CONTENT}")
+    if(CMAKE_MATCH_1)
+        string(STRIP "${CMAKE_MATCH_1}" GUI_VERSION_EXTRACTED)
+        string(REPLACE "\"" "" GUI_VERSION_EXTRACTED "${GUI_VERSION_EXTRACTED}")
+        set(OE_GUI_VERSION "${GUI_VERSION_EXTRACTED}")
+        message(STATUS "Detected Open Ephys GUI version: ${OE_GUI_VERSION}")
+    endif()
+endif()
+
+# Generate version header
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/PluginVersion.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/PluginVersion.h
+    @ONLY
+)
+
+# Add Windows resource file for DLL version info
+if(WIN32)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Resources/Version.rc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Version.rc
+        @ONLY
+    )
+    set(RESOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/Version.rc)
+endif()
+
 if (APPLE)
-    add_library(${PLUGIN_NAME} MODULE ${TRIGGERED_AVG_SOURCES})
+    add_library(${PLUGIN_NAME} MODULE ${TRIGGERED_AVG_SOURCES} ${RESOURCE_FILES})
 else()
-    add_library(${PLUGIN_NAME} SHARED ${TRIGGERED_AVG_SOURCES})
+    add_library(${PLUGIN_NAME} SHARED ${TRIGGERED_AVG_SOURCES} ${RESOURCE_FILES})
 endif()
 
 target_sources(${PLUGIN_NAME}
@@ -83,6 +127,13 @@ target_include_directories(${PLUGIN_NAME}
   ${GUI_BASE_DIR}/JuceLibraryCode/modules
   ${GUI_BASE_DIR}/Plugins/Headers
   ${GUI_COMMONLIB_DIR}/include
+  ${CMAKE_CURRENT_BINARY_DIR}  # For generated PluginVersion.h
+)
+
+# Set library version properties
+set_target_properties(${PLUGIN_NAME} PROPERTIES
+    VERSION ${PLUGIN_VERSION}
+    SOVERSION ${PLUGIN_VERSION_MAJOR}
 )
 
 
@@ -108,7 +159,11 @@ elseif(LINUX)
 
     install(TARGETS ${PLUGIN_NAME} LIBRARY DESTINATION ${GUI_BIN_DIR}/plugins)
 elseif(APPLE)
-    set_target_properties(${PLUGIN_NAME} PROPERTIES BUNDLE TRUE)
+    set_target_properties(${PLUGIN_NAME} PROPERTIES
+        BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PLUGIN_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PLUGIN_VERSION}
+    )
     set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
  "-undefined dynamic_lookup -rpath @loader_path/../../../../shared")
 
