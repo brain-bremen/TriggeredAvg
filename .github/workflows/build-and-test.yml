@@ -64,7 +64,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cd plugin/Build
+          cd plugin/Build/Tests
           ctest -C ${{ matrix.build-type }} --output-on-failure --verbose
         continue-on-error: false
 
@@ -154,7 +154,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cd plugin/Build
+          cd plugin/Build/Tests
           ctest --output-on-failure --verbose
         continue-on-error: false
 
@@ -171,5 +171,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: triggered-avg-plugin-linux-${{ matrix.build-type }}
-          path: plugin/Build/libtriggered-avg.so
+          path: plugin/Build/TriggeredAvg.so
           if-no-files-found: error

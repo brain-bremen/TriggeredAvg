@@ -122,6 +122,10 @@ if(BUILD_TESTS)
     enable_testing()
 
     # Build the main GUI project with tests enabled to get gui_testable_source and test_helpers
+    # NOTE: This will also register GUI tests in CTest. To run only TriggeredAvg tests:
+    #   ctest -R "TriggeredAvg_tests" -C Release
+    # Or from the Tests subdirectory:
+    #   cd Build/Tests && ctest -C Release
     set(BUILD_TESTS ON CACHE BOOL "Enable testing" FORCE)
     set(OE_DONT_CHECK_BUILD_PATH TRUE CACHE BOOL "Disable build path check" FORCE)
     add_subdirectory(${GUI_BASE_DIR} main_gui_build EXCLUDE_FROM_ALL)
