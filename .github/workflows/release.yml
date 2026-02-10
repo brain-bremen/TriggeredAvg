@@ -3,8 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
-      - 'v*.*.*-*'
+      - "v*.*.*"
+      - "v*.*.*-*"
 
 env:
   PLUGIN_GUI_VERSION: "v1.0.2"
@@ -54,7 +54,7 @@ jobs:
       - name: Configure plugin
         run: |
           cd plugin
-          cmake -B Build -G "Visual Studio 17 2022" -A x64 -DGUI_BASE_DIR="${{ github.workspace }}/plugin-GUI"
+          cmake -B Build -G "Visual Studio 17 2022" -A x64 -DGUI_BASE_DIR="${{ github.workspace }}/plugin-GUI" -DBUILD_TESTS=OFF
 
       - name: Build plugin
         run: |
