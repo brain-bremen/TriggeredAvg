@@ -23,8 +23,8 @@
 */
 #pragma once
 
-#include <vector>
 #include <span>
+#include <vector>
 
 namespace TriggeredAverage
 {

@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.23.0)
 
 set(PLUGIN_NAME TriggeredAvg)
 
+# Option to enable clang-tidy
+option(ENABLE_CLANG_TIDY "Enable clang-tidy checks during build" OFF)
+
 # Plugin version information
 set(PLUGIN_VERSION_MAJOR 1)
 set(PLUGIN_VERSION_MINOR 0)
@@ -51,6 +54,22 @@ set(GUI_BIN_DIR ${GUI_BASE_DIR}/Build/${CONFIGURATION_FOLDER})
 message(DEBUG "Using GUI_BASE_DIR: " ${GUI_BASE_DIR})
 message(DEBUG "GUI_BIN_DIR will be: " ${GUI_BASE_DIR}/Build/[Debug|Release])
 
+# Setup clang-tidy if enabled
+if(ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
+    if(CLANG_TIDY_EXE)
+        message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
+        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+    else()
+        message(WARNING "clang-tidy requested but not found")
+    endif()
+endif()
+
+# Setup clang-format target
+find_program(CLANG_FORMAT_EXE NAMES "clang-format")
+if(CLANG_FORMAT_EXE)
+    message(STATUS "clang-format found: ${CLANG_FORMAT_EXE}")
+endif()
 
 add_subdirectory(${TRIGGERED_AVG_SOURCE_PATH}) # sets TRIGGERED_AVG_HEADERS and TRIGGERED_AVG_SOURCES
 MESSAGE(DEBUG "TRIGGERED_AVG_HEADERS: ${TRIGGERED_AVG_HEADERS}")
@@ -169,6 +188,33 @@ elseif(APPLE)
 
     install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api10)
     set(CMAKE_PREFIX_PATH /opt/local)
+endif()
+
+# Add clang-format target if clang-format is available
+if(CLANG_FORMAT_EXE)
+    # Collect all source files for formatting
+    file(GLOB_RECURSE ALL_SOURCE_FILES
+        ${TRIGGERED_AVG_SOURCE_PATH}/*.cpp
+        ${TRIGGERED_AVG_SOURCE_PATH}/*.h
+    )
+
+    # Add format target
+    add_custom_target(
+        format
+        COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${ALL_SOURCE_FILES}
+        COMMENT "Running clang-format on source files"
+        VERBATIM
+    )
+
+    # Add format-check target (doesn't modify files, just checks)
+    add_custom_target(
+        format-check
+        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror -style=file ${ALL_SOURCE_FILES}
+        COMMENT "Checking code formatting with clang-format"
+        VERBATIM
+    )
+
+    message(STATUS "Added 'format' and 'format-check' targets")
 endif()
 
 # Add tests subdirectory if BUILD_TESTS is enabled

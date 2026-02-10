@@ -58,7 +58,7 @@ constexpr auto DisplayModeModeToString (DisplayMode mode) -> const char*
     }
 }
 
-static const auto DisplayModeStrings =  {
+static const auto DisplayModeStrings = {
     DisplayModeModeToString (DisplayMode::INDIVIDUAL_TRACES),
     DisplayModeModeToString (DisplayMode::AVERAGE_TRAGE),
     DisplayModeModeToString (DisplayMode::ALL_AND_AVERAGE),

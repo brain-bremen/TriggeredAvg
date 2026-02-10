@@ -23,10 +23,10 @@
 */
 #include "TriggeredAvgCanvas.h"
 #include "DataCollector.h"
+#include "DisplayMode.h"
 #include "GridDisplay.h"
 #include "TimeAxis.h"
 #include "TriggeredAvgNode.h"
-#include "DisplayMode.h"
 
 using namespace TriggeredAverage;
 
