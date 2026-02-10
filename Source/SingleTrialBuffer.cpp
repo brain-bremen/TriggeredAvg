@@ -22,6 +22,7 @@
 
 */
 #include "SingleTrialBuffer.h"
+#include <cassert>
 
 namespace TriggeredAverage
 {

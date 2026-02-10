@@ -26,6 +26,7 @@
 #include "GridDisplay.h"
 #include "TimeAxis.h"
 #include "TriggeredAvgNode.h"
+#include "DisplayMode.h"
 
 using namespace TriggeredAverage;
 
@@ -91,6 +92,7 @@ OptionsBar::OptionsBar (TriggeredAvgCanvas* canvas_, GridDisplay* display_, Time
     addAndMakeVisible (plotTypeLabel.get());
 
     plotTypeSelector = std::make_unique<ComboBox> ("Plot Type Selector");
+
     plotTypeSelector->addItemList (DisplayModeStrings, 1);
     plotTypeSelector->setSelectedId (1, dontSendNotification);
     plotTypeSelector->addListener (this);

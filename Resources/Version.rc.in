@@ -21,7 +21,7 @@ BEGIN
             VALUE "FileDescription", "TriggeredAvg Plugin for Open Ephys"
             VALUE "FileVersion", "@PLUGIN_VERSION@"
             VALUE "InternalName", "TriggeredAvg"
-            VALUE "LegalCopyright", "Copyright (C) 2024"
+            VALUE "LegalCopyright", "Copyright (C) 2025-2026"
             VALUE "OriginalFilename", "TriggeredAvg.dll"
             VALUE "ProductName", "TriggeredAvg Plugin"
             VALUE "ProductVersion", "@PLUGIN_VERSION@"

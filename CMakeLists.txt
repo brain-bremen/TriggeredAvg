@@ -142,7 +142,7 @@ if(MSVC)
   ${GUI_BIN_DIR}/open-ephys.lib
  )
 
-    target_compile_options(${PLUGIN_NAME} PRIVATE /sdl /W3 /MP /external:W0
+    target_compile_options(${PLUGIN_NAME} PRIVATE /sdl /W3 /MP4 /external:W0
                            /external:anglebrackets)
 
     install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
