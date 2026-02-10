@@ -1,8 +1,31 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 #include "TriggeredAvgCanvas.h"
+#include "DataCollector.h"
 #include "GridDisplay.h"
 #include "TimeAxis.h"
 #include "TriggeredAvgNode.h"
-#include "DataCollector.h"
 
 using namespace TriggeredAverage;
 
@@ -171,7 +194,7 @@ void OptionsBar::buttonClicked (Button* button)
     if (button == clearButton.get())
     {
         display->clearPanels();
-        
+
         // Also clear the actual data buffers (reset trials, don't destroy buffer objects)
         if (auto* processor = canvas->getProcessor())
         {
@@ -336,26 +359,24 @@ void OptionsBar::resized()
     mainLayout.alignItems = FlexBox::AlignItems::center;
 
     // Helper lambda to add spacing
-    auto addSpacer = [&mainLayout](int width) {
-        mainLayout.items.add (FlexItem().withWidth (width).withHeight (1));
-    };
+    auto addSpacer = [&mainLayout] (int width)
+    { mainLayout.items.add (FlexItem().withWidth (width).withHeight (1)); };
 
     // Helper lambda to add a control with standard height
-    auto addControl = [&mainLayout, controlHeight](Component& comp, int width) {
-        mainLayout.items.add (FlexItem (comp).withWidth (width).withHeight (controlHeight));
-    };
+    auto addControl = [&mainLayout, controlHeight] (Component& comp, int width)
+    { mainLayout.items.add (FlexItem (comp).withWidth (width).withHeight (controlHeight)); };
 
     // Left section: Layout controls
     addControl (*rowHeightLabel, 95);
     addSpacer (spacing);
     addControl (*rowHeightSelector, 80);
     addSpacer (spacing * 3);
-    
+
     addControl (*columnNumberLabel, 75);
     addSpacer (spacing);
     addControl (*columnNumberSelector, 50);
     addSpacer (spacing * 3);
-    
+
     addControl (*overlayLabel, 70);
     addSpacer (spacing);
     addControl (*overlayButton, 45);
@@ -395,7 +416,8 @@ void OptionsBar::resized()
     addControl (*clearButton, 70);
 
     // Perform layout
-    mainLayout.performLayout (getLocalBounds().withTrimmedTop (verticalOffset).withTrimmedLeft (5).withTrimmedRight (5));
+    mainLayout.performLayout (
+        getLocalBounds().withTrimmedTop (verticalOffset).withTrimmedLeft (5).withTrimmedRight (5));
 }
 
 void OptionsBar::paint (Graphics& g)

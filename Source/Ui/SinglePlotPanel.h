@@ -1,3 +1,26 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 #pragma once
 
 #include "DisplayMode.h"
@@ -39,40 +62,40 @@ public:
 
     /** Sets custom y-axis limits for the plot */
     void setYLimits (float minY, float maxY);
-    
+
     /** Returns the current minimum y-axis limit */
     float getYMin() const { return yMin; }
-    
+
     /** Returns the current maximum y-axis limit */
     float getYMax() const { return yMax; }
-    
+
     /** Resets to auto-scaling mode (based on data min/max) */
     void resetYLimits();
-    
+
     /** Returns true if using custom y-axis limits, false if auto-scaling */
     bool hasCustomYLimits() const { return useCustomYLimits; }
-    
+
     /** Sets custom x-axis limits for the plot */
     void setXLimits (float minX, float maxX);
-    
+
     /** Returns the current minimum x-axis limit */
     float getXMin() const { return xMin; }
-    
+
     /** Returns the current maximum x-axis limit */
     float getXMax() const { return xMax; }
-    
+
     /** Resets to auto X-axis scaling mode */
     void resetXLimits();
-    
+
     /** Returns true if using custom x-axis limits, false if auto-scaling */
     bool hasCustomXLimits() const { return useCustomXLimits; }
-    
+
     /** Sets the trial buffer to use for individual trial plotting */
     void setTrialBuffer (const SingleTrialBuffer* trialBuffer);
-    
+
     /** Sets the maximum number of individual trials to display */
     void setMaxTrialsToDisplay (int n);
-    
+
     /** Sets the opacity for individual trial traces */
     void setTrialOpacity (float opacity);
 
@@ -99,9 +122,18 @@ private:
 
     DataRange calculateDataRange (const float* channelData, int numSamples);
     TimeRange calculateTimeRange (int numSamples) const;
-    void plotWithDirectMapping (const float* channelData, int numSamples, const DataRange& dataRange);
-    void plotWithCustomXLimits (const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
-    void plotTrialToPath (Path& path, const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange);
+    void plotWithDirectMapping (const float* channelData,
+                                int numSamples,
+                                const DataRange& dataRange);
+    void plotWithCustomXLimits (const float* channelData,
+                                int numSamples,
+                                const DataRange& dataRange,
+                                const TimeRange& timeRange);
+    void plotTrialToPath (Path& path,
+                          const float* channelData,
+                          int numSamples,
+                          const DataRange& dataRange,
+                          const TimeRange& timeRange);
     void drawZeroLine (Graphics& g) const;
     bool updateCachedAveragPath();
     bool updateCachedTrialPaths();
@@ -140,18 +172,18 @@ private:
     int cachedNumTrials = -1;
     int cachedPanelWidth = -1;
     int numTrials = 0;
-    
+
     // Individual trial rendering
     Array<Path> cachedTrialPaths;
     int cachedTrialCount = -1;
     int maxTrialsToDisplay = 10;
     float trialOpacity = 0.3f;
-    
+
     // Y-axis limits
     bool useCustomYLimits = false;
     float yMin = 0.0f;
     float yMax = 1.0f;
-    
+
     // X-axis limits
     bool useCustomXLimits = false;
     float xMin = 0.0f;

@@ -1,8 +1,9 @@
 /*
     ------------------------------------------------------------------
 
-    This file is part of the Open Ephys GUI
-    Copyright (C) 2024 Open Ephys
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
 
     ------------------------------------------------------------------
 
@@ -25,14 +26,11 @@
 #define TriggeredAvgNodeActions_h
 
 #include "TriggeredAvgNode.h"
-
 #include <ProcessorHeaders.h>
 
 namespace TriggeredAverage
 {
-//class TriggeredAvgNode;
 
-//class TriggeredAvgNode;
 enum class TriggerType : std::int_fast8_t;
 class TriggerSource;
 

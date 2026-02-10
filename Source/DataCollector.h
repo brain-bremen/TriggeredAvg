@@ -1,3 +1,26 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 #pragma once
 #include "MultiChannelRingBuffer.h"
 #include "SingleTrialBuffer.h"
@@ -25,59 +48,59 @@ class SingleTrialBufferJuce : public SingleTrialBuffer
 {
 public:
     SingleTrialBufferJuce() = default;
-    using SingleTrialBuffer::addTrial;  // Expose raw pointer version
+    using SingleTrialBuffer::addTrial; // Expose raw pointer version
+    using SingleTrialBuffer::clear;
     using SingleTrialBuffer::getChannelTrials;
-    using SingleTrialBuffer::getSample;
-    using SingleTrialBuffer::getTrial;  // Expose raw pointer version
-    using SingleTrialBuffer::getNumStoredTrials;
     using SingleTrialBuffer::getMaxTrials;
     using SingleTrialBuffer::getNumChannels;
     using SingleTrialBuffer::getNumSamples;
+    using SingleTrialBuffer::getNumStoredTrials;
+    using SingleTrialBuffer::getSample;
+    using SingleTrialBuffer::getTrial; // Expose raw pointer version
     using SingleTrialBuffer::setMaxTrials;
     using SingleTrialBuffer::setSize;
-    using SingleTrialBuffer::clear;
-    
+
     /** Add a trial from a JUCE AudioBuffer (convenience wrapper using span-based API) */
-    template<typename SampleType>
-    void addTrial(const juce::AudioBuffer<SampleType>& buffer)
+    template <typename SampleType>
+    void addTrial (const juce::AudioBuffer<SampleType>& buffer)
     {
         // Build spans from AudioBuffer for type-safe, size-aware API
         std::vector<std::span<const SampleType>> channelSpans;
-        channelSpans.reserve(buffer.getNumChannels());
+        channelSpans.reserve (buffer.getNumChannels());
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
         {
-            channelSpans.emplace_back(buffer.getReadPointer(ch), buffer.getNumSamples());
+            channelSpans.emplace_back (buffer.getReadPointer (ch), buffer.getNumSamples());
         }
-        
+
         // For float buffers, use the span-based addTrial directly
         if constexpr (std::is_same_v<SampleType, float>)
         {
-            SingleTrialBuffer::addTrial(std::span(channelSpans));
+            SingleTrialBuffer::addTrial (std::span (channelSpans));
         }
         else
         {
             // For non-float types, fall back to pointer version (will convert via delegation)
-            SingleTrialBuffer::addTrial(buffer.getArrayOfReadPointers(), 
-                                         buffer.getNumChannels(), 
-                                         buffer.getNumSamples());
+            SingleTrialBuffer::addTrial (
+                buffer.getArrayOfReadPointers(), buffer.getNumChannels(), buffer.getNumSamples());
         }
     }
-    
+
     /** Copy a specific trial into a JUCE AudioBuffer (convenience wrapper) */
-    template<typename SampleType>
-    void getTrial(int trialIndex, juce::AudioBuffer<SampleType>& destination) const
+    template <typename SampleType>
+    void getTrial (int trialIndex, juce::AudioBuffer<SampleType>& destination) const
     {
         // TODO: Consider refactoring to use std::span to avoid const_cast
         // getArrayOfWritePointers() returns Type*const* (const array of pointers)
         // but getTrial expects Type** (non-const array). The const_cast is safe here
         // because we only write to the audio data, not modify the array structure.
-        SingleTrialBuffer::getTrial(trialIndex, 
-                                     const_cast<SampleType**>(destination.getArrayOfWritePointers()),
-                                     destination.getNumChannels(), 
-                                     destination.getNumSamples());
+        SingleTrialBuffer::getTrial (
+            trialIndex,
+            const_cast<SampleType**> (destination.getArrayOfWritePointers()),
+            destination.getNumChannels(),
+            destination.getNumSamples());
     }
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SingleTrialBufferJuce)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SingleTrialBufferJuce)
 };
 
 // Thread-safe storage of average buffers

@@ -3,7 +3,7 @@
 
     This file is part of the Open Ephys GUI Plugin Triggered Average
     Copyright (C) 2022 Open Ephys
-    Copyright (C) 2025 Joscha Schmiedt
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
 
     ------------------------------------------------------------------
 
@@ -69,13 +69,12 @@ public:
     AudioProcessorEditor* createEditor() override;
     void parameterValueChanged (Parameter* param) override;
     void process (AudioBuffer<float>& buffer) override;
-    bool startAcquisition () override;
+    bool startAcquisition() override;
 
     // parameters
     int getMaxTrials() const { return (int) getParameter (ParameterNames::max_trials)->getValue(); }
     float getPreWindowSizeMs() const;
     float getPostWindowSizeMs() const;
-
 
     int getNumberOfPreSamples() const;
     int getNumberOfPostSamplesIncludingTrigger() const;

@@ -1,8 +1,29 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 #include "MultiChannelRingBuffer.h"
-
-#include <juce_audio_basics/juce_audio_basics.h> // for AudioBuffer
-
 #include <algorithm>
+#include <juce_audio_basics/juce_audio_basics.h> // for AudioBuffer
 
 using namespace TriggeredAverage;
 using namespace juce;
@@ -17,7 +38,8 @@ MultiChannelRingBuffer::MultiChannelRingBuffer (int numChannels_, int bufferSize
 }
 
 void MultiChannelRingBuffer::addData (const AudioBuffer<float>& inputBuffer,
-                                      SampleNumber firstSampleNumber, uint32 numberOfSamplesInBLock)
+                                      SampleNumber firstSampleNumber,
+                                      uint32 numberOfSamplesInBLock)
 {
     const std::scoped_lock lock (writeLock);
 
@@ -99,26 +121,26 @@ RingBufferReadResult
 
 /**
  * Calculates the starting position in the ring buffer for a triggered read operation.
- * 
+ *
  * This method determines if a requested time window can be read from the ring buffer
  * and calculates the appropriate starting position if successful.
- * 
+ *
  * @param centerSample The sample number at which the trigger event occured
  * @param preSamples Number of samples to read BEFORE the trigger (centerSample - preSamples is the start)
  * @param postSamples Number of samples to read AFTER the trigger (up to but not including centerSample + postSamples)
- * 
+ *
  * Total samples to be read: preSamples + postSamples
  * Read window: [centerSample - preSamples, centerSample + postSamples)
- * 
+ *
  * Example: centerSample=1000, preSamples=100, postSamples=200
  *   - Will read samples 900 to 1199 (300 samples total)
  *   - Sample 900-999: pre-trigger data (100 samples)
  *   - Sample 1000-1199: post-trigger data (200 samples)
- * 
+ *
  * @return A pair containing:
  *   - RingBufferReadResult indicating success or failure reason
  *   - Optional buffer start position (valid only if result is Success)
- * 
+ *
  * @note This method is lock-free as it only reads atomic variables
  */
 std::pair<RingBufferReadResult, std::optional<int>>

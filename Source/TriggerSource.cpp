@@ -1,8 +1,6 @@
 #include "TriggerSource.h"
-
 #include "TriggeredAvgNode.h"
 #include "Ui/TriggeredAvgEditor.h"
-
 #include <JuceHeader.h>
 
 using namespace TriggeredAverage;

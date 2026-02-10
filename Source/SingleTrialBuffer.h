@@ -1,9 +1,29 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 #pragma once
 
-#include <algorithm>
 #include <cassert>
-#include <cstring>
-#include <span>
 #include <vector>
 
 namespace TriggeredAverage
@@ -18,15 +38,15 @@ struct SingleTrialBufferSize
 
 /**
  * @brief JUCE-independent buffer for storing multiple trials of multi-channel data
- * 
+ *
  * Uses channel-major memory layout for optimal cache performance when iterating
  * over trials of a single channel. Data is stored as:
  * [Ch0_Trial0][Ch0_Trial1]...[Ch0_TrialN][Ch1_Trial0][Ch1_Trial1]...
- * 
+ *
  * This layout provides excellent cache locality when:
  * - Iterating over all trials for a single channel (common for plotting)
  * - Computing statistics across trials for one channel
- * 
+ *
  * Thread Safety: This class is NOT thread-safe. External synchronization required.
  */
 class SingleTrialBuffer
@@ -64,7 +84,7 @@ public:
      */
     std::span<const float> getChannelTrials (int channelIndex) const;
 
-    /** Get a single sample from a specific trial and channel 
+    /** Get a single sample from a specific trial and channel
      * @param channelIndex Channel index (0-based)
      * @param trialIndex Logical trial index (0 = oldest stored)
      * @param sampleIndex Sample within the trial

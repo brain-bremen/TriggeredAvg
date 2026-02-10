@@ -1,5 +1,27 @@
-#include "SinglePlotPanel.h"
+/*
+    ------------------------------------------------------------------
 
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+#include "SinglePlotPanel.h"
 #include "DataCollector.h"
 #include "PerformanceTimer.h"
 #include "TriggerSource.h"
@@ -168,7 +190,7 @@ void SinglePlotPanel::setYLimits (float minY, float maxY)
     {
         return;
     }
-    
+
     yMin = minY;
     yMax = maxY;
     useCustomYLimits = true;
@@ -195,7 +217,7 @@ void SinglePlotPanel::setXLimits (float minX, float maxX)
     {
         return;
     }
-    
+
     xMin = minX;
     xMax = maxX;
     useCustomXLimits = true;
@@ -253,7 +275,7 @@ void SinglePlotPanel::setPlotType (TriggeredAverage::DisplayMode plotType)
         cachedTrialCount = -1; // force update
         updateCachedTrialPaths();
     }
-    
+
     repaint();
 }
 
@@ -276,10 +298,7 @@ void SinglePlotPanel::drawBackground (bool shouldDraw)
     infoLabel->setVisible (shouldDrawBackground);
 }
 
-void SinglePlotPanel::setOverlayMode (bool shouldOverlay)
-{ 
-    overlayMode = shouldOverlay;
-}
+void SinglePlotPanel::setOverlayMode (bool shouldOverlay) { overlayMode = shouldOverlay; }
 
 void SinglePlotPanel::setOverlayIndex (int index)
 {
@@ -302,10 +321,11 @@ void SinglePlotPanel::invalidateCache()
     repaint();
 }
 
-SinglePlotPanel::DataRange SinglePlotPanel::calculateDataRange (const float* channelData, int numSamples)
+SinglePlotPanel::DataRange SinglePlotPanel::calculateDataRange (const float* channelData,
+                                                                int numSamples)
 {
     DataRange result;
-    
+
     if (useCustomYLimits)
     {
         result.minVal = yMin;
@@ -321,21 +341,21 @@ SinglePlotPanel::DataRange SinglePlotPanel::calculateDataRange (const float* cha
             result.maxVal = std::max (result.maxVal, channelData[i]);
         }
     }
-    
+
     result.range = result.maxVal - result.minVal;
     if (result.range < 1e-6f)
         result.range = 1.0f;
-    
+
     return result;
 }
 
 SinglePlotPanel::TimeRange SinglePlotPanel::calculateTimeRange (int numSamples) const
 {
     TimeRange result;
-    
+
     result.totalTimeMs = pre_ms + post_ms;
     result.timePerSample = result.totalTimeMs / (numSamples - 1);
-    
+
     if (useCustomXLimits)
     {
         result.displayXMin = xMin;
@@ -346,32 +366,34 @@ SinglePlotPanel::TimeRange SinglePlotPanel::calculateTimeRange (int numSamples) 
         result.displayXMin = -pre_ms;
         result.displayXMax = post_ms;
     }
-    
+
     result.displayXRange = result.displayXMax - result.displayXMin;
     if (result.displayXRange < 1e-6f)
         result.displayXRange = 1.0f;
-    
+
     return result;
 }
 
-void SinglePlotPanel::plotWithDirectMapping (const float* channelData, int numSamples, const DataRange& dataRange)
+void SinglePlotPanel::plotWithDirectMapping (const float* channelData,
+                                             int numSamples,
+                                             const DataRange& dataRange)
 {
     const int numPixels = panelWidthPx;
     const int samplesPerPixel = std::max (1, numSamples / numPixels);
-    
+
     if (samplesPerPixel <= 1)
     {
         for (int i = 0; i < numSamples; ++i)
         {
             float x = (static_cast<float> (i) / static_cast<float> (numSamples - 1))
                       * static_cast<float> (panelWidthPx);
-        
+
             float value = channelData[i];
             if (useCustomYLimits)
             {
                 value = std::max (dataRange.minVal, std::min (dataRange.maxVal, value));
             }
-        
+
             float normalizedValue = (value - dataRange.minVal) / dataRange.range;
             float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
 
@@ -396,7 +418,7 @@ void SinglePlotPanel::plotWithDirectMapping (const float* channelData, int numSa
                 pixelMin = std::min (pixelMin, channelData[i]);
                 pixelMax = std::max (pixelMax, channelData[i]);
             }
-        
+
             if (useCustomYLimits)
             {
                 pixelMin = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMin));
@@ -404,8 +426,10 @@ void SinglePlotPanel::plotWithDirectMapping (const float* channelData, int numSa
             }
 
             float x = static_cast<float> (pixelIndex);
-            float yMin = static_cast<float> (panelHeightPx) * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
-            float yMax = static_cast<float> (panelHeightPx) * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
+            float yMin = static_cast<float> (panelHeightPx)
+                         * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
+            float yMax = static_cast<float> (panelHeightPx)
+                         * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
 
             if (pixelIndex == 0)
             {
@@ -424,15 +448,18 @@ void SinglePlotPanel::plotWithDirectMapping (const float* channelData, int numSa
     }
 }
 
-void SinglePlotPanel::plotWithCustomXLimits (const float* channelData, int numSamples, const DataRange& dataRange, const TimeRange& timeRange)
+void SinglePlotPanel::plotWithCustomXLimits (const float* channelData,
+                                             int numSamples,
+                                             const DataRange& dataRange,
+                                             const TimeRange& timeRange)
 {
     int firstVisibleSample = -1;
     int lastVisibleSample = -1;
-    
+
     for (int i = 0; i < numSamples; ++i)
     {
         float sampleTimeMs = -pre_ms + (i * timeRange.timePerSample);
-        
+
         if (sampleTimeMs >= timeRange.displayXMin && sampleTimeMs <= timeRange.displayXMax)
         {
             if (firstVisibleSample == -1)
@@ -444,32 +471,33 @@ void SinglePlotPanel::plotWithCustomXLimits (const float* channelData, int numSa
             break;
         }
     }
-    
+
     if (firstVisibleSample == -1 || lastVisibleSample < firstVisibleSample)
         return;
-    
+
     const int numPixels = panelWidthPx;
     int numVisibleSamples = lastVisibleSample - firstVisibleSample + 1;
     int samplesPerPixel = std::max (1, numVisibleSamples / numPixels);
     bool pathStarted = false;
-    
+
     if (samplesPerPixel <= 1)
     {
         for (int i = firstVisibleSample; i <= lastVisibleSample; ++i)
         {
             float sampleTimeMs = -pre_ms + (i * timeRange.timePerSample);
-            float x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange) * static_cast<float> (panelWidthPx);
-            
+            float x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange)
+                      * static_cast<float> (panelWidthPx);
+
             float value = channelData[i];
             if (useCustomYLimits)
             {
                 value = std::max (dataRange.minVal, std::min (dataRange.maxVal, value));
             }
-            
+
             float normalizedValue = (value - dataRange.minVal) / dataRange.range;
             float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
-            
-            if (!pathStarted)
+
+            if (! pathStarted)
             {
                 cachedAveragePath.startNewSubPath (x, y);
                 pathStarted = true;
@@ -486,31 +514,34 @@ void SinglePlotPanel::plotWithCustomXLimits (const float* channelData, int numSa
         {
             int sampleStart = firstVisibleSample + pixelIndex * samplesPerPixel;
             int sampleEnd = std::min (sampleStart + samplesPerPixel, lastVisibleSample + 1);
-            
+
             if (sampleStart >= numSamples)
                 break;
-            
+
             float pixelMin = channelData[sampleStart];
             float pixelMax = channelData[sampleStart];
             float firstSampleTime = -pre_ms + (sampleStart * timeRange.timePerSample);
-            
+
             for (int i = sampleStart + 1; i < sampleEnd; ++i)
             {
                 pixelMin = std::min (pixelMin, channelData[i]);
                 pixelMax = std::max (pixelMax, channelData[i]);
             }
-            
+
             if (useCustomYLimits)
             {
                 pixelMin = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMin));
                 pixelMax = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMax));
             }
-            
-            float x = ((firstSampleTime - timeRange.displayXMin) / timeRange.displayXRange) * static_cast<float> (panelWidthPx);
-            float yMin = static_cast<float> (panelHeightPx) * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
-            float yMax = static_cast<float> (panelHeightPx) * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
-            
-            if (!pathStarted)
+
+            float x = ((firstSampleTime - timeRange.displayXMin) / timeRange.displayXRange)
+                      * static_cast<float> (panelWidthPx);
+            float yMin = static_cast<float> (panelHeightPx)
+                         * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
+            float yMax = static_cast<float> (panelHeightPx)
+                         * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
+
+            if (! pathStarted)
             {
                 cachedAveragePath.startNewSubPath (x, yMin);
                 pathStarted = true;
@@ -519,7 +550,7 @@ void SinglePlotPanel::plotWithCustomXLimits (const float* channelData, int numSa
             {
                 cachedAveragePath.lineTo (x, yMin);
             }
-            
+
             if (std::abs (yMax - yMin) > 0.5f)
             {
                 cachedAveragePath.lineTo (x, yMax);
@@ -528,29 +559,32 @@ void SinglePlotPanel::plotWithCustomXLimits (const float* channelData, int numSa
     }
 }
 
-void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int numSamples, 
-                                       const DataRange& dataRange, const TimeRange& timeRange)
+void SinglePlotPanel::plotTrialToPath (Path& path,
+                                       const float* channelData,
+                                       int numSamples,
+                                       const DataRange& dataRange,
+                                       const TimeRange& timeRange)
 {
     const int numPixels = panelWidthPx;
-    
-    if (!useCustomXLimits)
+
+    if (! useCustomXLimits)
     {
         // Direct mapping (no custom X limits)
         const int samplesPerPixel = std::max (1, numSamples / numPixels);
-        
+
         if (samplesPerPixel <= 1)
         {
             for (int i = 0; i < numSamples; ++i)
             {
                 float x = (static_cast<float> (i) / static_cast<float> (numSamples - 1))
                           * static_cast<float> (panelWidthPx);
-            
+
                 float value = channelData[i];
                 if (useCustomYLimits)
                 {
                     value = std::max (dataRange.minVal, std::min (dataRange.maxVal, value));
                 }
-            
+
                 float normalizedValue = (value - dataRange.minVal) / dataRange.range;
                 float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
 
@@ -575,7 +609,7 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
                     pixelMin = std::min (pixelMin, channelData[i]);
                     pixelMax = std::max (pixelMax, channelData[i]);
                 }
-            
+
                 if (useCustomYLimits)
                 {
                     pixelMin = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMin));
@@ -583,8 +617,10 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
                 }
 
                 float x = static_cast<float> (pixelIndex);
-                float yMin = static_cast<float> (panelHeightPx) * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
-                float yMax = static_cast<float> (panelHeightPx) * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
+                float yMin = static_cast<float> (panelHeightPx)
+                             * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
+                float yMax = static_cast<float> (panelHeightPx)
+                             * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
 
                 if (pixelIndex == 0)
                 {
@@ -607,11 +643,11 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
         // Custom X limits (zoom/pan)
         int firstVisibleSample = -1;
         int lastVisibleSample = -1;
-        
+
         for (int i = 0; i < numSamples; ++i)
         {
             float sampleTimeMs = -pre_ms + (i * timeRange.timePerSample);
-            
+
             if (sampleTimeMs >= timeRange.displayXMin && sampleTimeMs <= timeRange.displayXMax)
             {
                 if (firstVisibleSample == -1)
@@ -623,31 +659,32 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
                 break;
             }
         }
-        
+
         if (firstVisibleSample == -1 || lastVisibleSample < firstVisibleSample)
             return;
-        
+
         int numVisibleSamples = lastVisibleSample - firstVisibleSample + 1;
         int samplesPerPixel = std::max (1, numVisibleSamples / numPixels);
         bool pathStarted = false;
-        
+
         if (samplesPerPixel <= 1)
         {
             for (int i = firstVisibleSample; i <= lastVisibleSample; ++i)
             {
                 float sampleTimeMs = -pre_ms + (i * timeRange.timePerSample);
-                float x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange) * static_cast<float> (panelWidthPx);
-                
+                float x = ((sampleTimeMs - timeRange.displayXMin) / timeRange.displayXRange)
+                          * static_cast<float> (panelWidthPx);
+
                 float value = channelData[i];
                 if (useCustomYLimits)
                 {
                     value = std::max (dataRange.minVal, std::min (dataRange.maxVal, value));
                 }
-                
+
                 float normalizedValue = (value - dataRange.minVal) / dataRange.range;
                 float y = static_cast<float> (panelHeightPx) * (1.0f - normalizedValue);
-                
-                if (!pathStarted)
+
+                if (! pathStarted)
                 {
                     path.startNewSubPath (x, y);
                     pathStarted = true;
@@ -664,31 +701,34 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
             {
                 int sampleStart = firstVisibleSample + pixelIndex * samplesPerPixel;
                 int sampleEnd = std::min (sampleStart + samplesPerPixel, lastVisibleSample + 1);
-                
+
                 if (sampleStart >= numSamples)
                     break;
-                
+
                 float pixelMin = channelData[sampleStart];
                 float pixelMax = channelData[sampleStart];
                 float firstSampleTime = -pre_ms + (sampleStart * timeRange.timePerSample);
-                
+
                 for (int i = sampleStart + 1; i < sampleEnd; ++i)
                 {
                     pixelMin = std::min (pixelMin, channelData[i]);
                     pixelMax = std::max (pixelMax, channelData[i]);
                 }
-                
+
                 if (useCustomYLimits)
                 {
                     pixelMin = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMin));
                     pixelMax = std::max (dataRange.minVal, std::min (dataRange.maxVal, pixelMax));
                 }
-                
-                float x = ((firstSampleTime - timeRange.displayXMin) / timeRange.displayXRange) * static_cast<float> (panelWidthPx);
-                float yMin = static_cast<float> (panelHeightPx) * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
-                float yMax = static_cast<float> (panelHeightPx) * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
-                
-                if (!pathStarted)
+
+                float x = ((firstSampleTime - timeRange.displayXMin) / timeRange.displayXRange)
+                          * static_cast<float> (panelWidthPx);
+                float yMin = static_cast<float> (panelHeightPx)
+                             * (1.0f - (pixelMin - dataRange.minVal) / dataRange.range);
+                float yMax = static_cast<float> (panelHeightPx)
+                             * (1.0f - (pixelMax - dataRange.minVal) / dataRange.range);
+
+                if (! pathStarted)
                 {
                     path.startNewSubPath (x, yMin);
                     pathStarted = true;
@@ -697,7 +737,7 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
                 {
                     path.lineTo (x, yMin);
                 }
-                
+
                 if (std::abs (yMax - yMin) > 0.5f)
                 {
                     path.lineTo (x, yMax);
@@ -709,34 +749,34 @@ void SinglePlotPanel::plotTrialToPath (Path& path, const float* channelData, int
 
 bool SinglePlotPanel::updateCachedTrialPaths()
 {
-    if (!m_trialBuffer || !plotAllTraces)
+    if (! m_trialBuffer || ! plotAllTraces)
         return false;
-    
+
     int currentTrialCount = m_trialBuffer->getNumStoredTrials();
-    
+
     // Check if we need to update
-    if (currentTrialCount == cachedTrialCount && !cachedTrialPaths.isEmpty())
+    if (currentTrialCount == cachedTrialCount && ! cachedTrialPaths.isEmpty())
         return false;
-    
+
     PerformanceTimer updateTimer ("update cached trial paths", 5.0);
-    
+
     cachedTrialPaths.clear();
-    
+
     if (currentTrialCount == 0)
     {
         cachedTrialCount = 0;
         return false;
     }
-    
+
     // Determine how many trials to plot
     int trialsToPlot = std::min (maxTrialsToDisplay, currentTrialCount);
     int startIndex = currentTrialCount - trialsToPlot; // Start from most recent trials
-    
+
     // Calculate data range for all trials (for consistent scaling)
     DataRange globalDataRange;
     globalDataRange.minVal = std::numeric_limits<float>::max();
     globalDataRange.maxVal = std::numeric_limits<float>::lowest();
-    
+
     if (useCustomYLimits)
     {
         globalDataRange.minVal = yMin;
@@ -745,83 +785,87 @@ bool SinglePlotPanel::updateCachedTrialPaths()
     else
     {
         // Use the SingleTrialBuffer's optimized min/max calculation
-        if (!m_trialBuffer->getChannelMinMax(channelIndexInAverageBuffer, startIndex, currentTrialCount,
-                                              globalDataRange.minVal, globalDataRange.maxVal))
+        if (! m_trialBuffer->getChannelMinMax (channelIndexInAverageBuffer,
+                                               startIndex,
+                                               currentTrialCount,
+                                               globalDataRange.minVal,
+                                               globalDataRange.maxVal))
         {
             // Fallback if method fails
             globalDataRange.minVal = 0.0f;
             globalDataRange.maxVal = 1.0f;
         }
     }
-    
+
     globalDataRange.range = globalDataRange.maxVal - globalDataRange.minVal;
     if (globalDataRange.range < 1e-6f)
         globalDataRange.range = 1.0f;
-    
+
     // Get time range (assuming all trials have same time window)
     // Use the known number of samples from the buffer
     int numSamples = m_trialBuffer->getNumSamples();
     if (numSamples == 0)
         return false;
-        
+
     TimeRange timeRange = calculateTimeRange (numSamples);
-    
+
     // Create path for each trial using zero-copy direct pointer access
     for (int trialIdx = startIndex; trialIdx < currentTrialCount; ++trialIdx)
     {
         Path trialPath;
-        
+
         // Get direct pointer to trial data (zero-copy, no memcpy needed!)
-        const float* trialDataPtr = m_trialBuffer->getTrialDataPointer(channelIndexInAverageBuffer, trialIdx);
-        
+        const float* trialDataPtr =
+            m_trialBuffer->getTrialDataPointer (channelIndexInAverageBuffer, trialIdx);
+
         if (trialDataPtr == nullptr)
             continue;
-        
+
         // Use the existing optimized plotting method with downsampling
-        plotTrialToPath(trialPath, trialDataPtr, numSamples, globalDataRange, timeRange);
-        
-        if (!trialPath.isEmpty())
+        plotTrialToPath (trialPath, trialDataPtr, numSamples, globalDataRange, timeRange);
+
+        if (! trialPath.isEmpty())
             cachedTrialPaths.add (std::move (trialPath));
     }
-    
+
     cachedTrialCount = currentTrialCount;
-    
+
     return true;
 }
 
 bool SinglePlotPanel::updateCachedAveragPath()
 {
-    if (!m_averageBuffer)
+    if (! m_averageBuffer)
         return false;
-    
+
     int currentNumTrials = m_averageBuffer->getNumTrials();
-    
-    if (currentNumTrials == cachedNumTrials && !cachedAveragePath.isEmpty())
+
+    if (currentNumTrials == cachedNumTrials && ! cachedAveragePath.isEmpty())
         return false;
-    
+
     PerformanceTimer updateTimer ("update cached path", 5.0);
-    
+
     AudioBuffer<float> avgBuffer;
     {
         PerformanceTimer avgTimer ("getAverage()", 5.0);
         avgBuffer = m_averageBuffer->getAverage();
     }
-    
+
     auto trialCounterString = String (m_averageBuffer->getNumTrials());
     trialCounter->setText (trialCounterString, dontSendNotification);
-    
+
     if (avgBuffer.getNumSamples() == 0 || avgBuffer.getNumChannels() == 0)
         return false;
-    
+
     const int numSamples = avgBuffer.getNumSamples();
     const float* channelData = avgBuffer.getReadPointer (channelIndexInAverageBuffer);
-    
+
     auto dataRange = calculateDataRange (channelData, numSamples);
     auto timeRange = calculateTimeRange (numSamples);
-    
+
     cachedAveragePath.clear();
-    
-    if (!useCustomXLimits)
+
+    if (! useCustomXLimits)
     {
         plotWithDirectMapping (channelData, numSamples, dataRange);
     }
@@ -829,22 +873,22 @@ bool SinglePlotPanel::updateCachedAveragPath()
     {
         plotWithCustomXLimits (channelData, numSamples, dataRange, timeRange);
     }
-    
+
     cachedNumTrials = currentNumTrials;
-    
+
     return true;
 }
 
 void SinglePlotPanel::drawZeroLine (Graphics& g) const
 {
     float zeroLoc;
-    
+
     if (useCustomXLimits)
     {
         float displayXMin = xMin;
         float displayXMax = xMax;
         float displayXRange = displayXMax - displayXMin;
-        
+
         if (0.0f >= displayXMin && 0.0f <= displayXMax)
         {
             zeroLoc = ((0.0f - displayXMin) / displayXRange) * static_cast<float> (panelWidthPx);
@@ -858,7 +902,7 @@ void SinglePlotPanel::drawZeroLine (Graphics& g) const
     {
         zeroLoc = (pre_ms) / (pre_ms + post_ms) * static_cast<float> (panelWidthPx);
     }
-    
+
     if (zeroLoc >= 0.0f)
     {
         g.drawLine (zeroLoc, 0, zeroLoc, static_cast<float> (getHeight()), 2.0);
@@ -875,24 +919,24 @@ void SinglePlotPanel::paint (Graphics& g)
     }
 
     // Draw individual trials first (underneath the average)
-    if (plotAllTraces && !cachedTrialPaths.isEmpty())
+    if (plotAllTraces && ! cachedTrialPaths.isEmpty())
     {
         g.setOpacity (trialOpacity);
         g.setColour (Colours::grey);
-        
+
         // Use faster non-antialiased rendering for individual trials to reduce GPU load
         PathStrokeType fastStroke (0.5f, PathStrokeType::mitered, PathStrokeType::butt);
-        
+
         for (const auto& trialPath : cachedTrialPaths)
         {
             g.strokePath (trialPath, fastStroke);
         }
-        
+
         g.setOpacity (1.0f);
     }
 
     // Draw average trace on top with antialiasing for better quality
-    if (plotAverage && !cachedAveragePath.isEmpty())
+    if (plotAverage && ! cachedAveragePath.isEmpty())
     {
         g.setColour (baseColour);
         g.strokePath (cachedAveragePath, PathStrokeType (1.5f));

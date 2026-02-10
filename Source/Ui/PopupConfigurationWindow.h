@@ -2,8 +2,8 @@
     ------------------------------------------------------------------
 
     This file is part of the Open Ephys GUI Plugin Triggered Average
-    Copyright (C) 2014 Open Ephys
-    Copyright (C) 2025 Joscha Schmiedt 
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
 
     ------------------------------------------------------------------
 
@@ -275,7 +275,7 @@ private:
     bool acquisitionIsActive;
 };
 
-/** 
+/**
     Interface to generate new Spike Channels
 */
 class TriggerSourceGenerator : public Component,

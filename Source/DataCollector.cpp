@@ -1,3 +1,26 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 #include "DataCollector.h"
 #include "MultiChannelRingBuffer.h"
 #include "TriggerSource.h"
@@ -133,8 +156,9 @@ void DataCollector::run()
                             if (iRetry < maximumNumberOfRetries)
                             {
                                 // Check if time has jumped backwards (e.g., FileReader looping)
-                                SampleNumber currentSampleNumber = ringBuffer->getCurrentSampleNumber();
-                                
+                                SampleNumber currentSampleNumber =
+                                    ringBuffer->getCurrentSampleNumber();
+
                                 LOGD ("[TriggeredAvg] Capture Request retry ",
                                       iRetry,
                                       " - not enough data available yet (triggerSample: ",
@@ -146,14 +170,15 @@ void DataCollector::run()
                                       "), waiting ",
                                       retryIntervalMs,
                                       " ms.")
-                                
+
                                 if (currentSampleNumber < lastKnownSampleNumber)
                                 {
-                                    LOGD ("[TriggeredAvg] Time jump detected! Aborting capture request.");
+                                    LOGD (
+                                        "[TriggeredAvg] Time jump detected! Aborting capture request.");
                                     result = RingBufferReadResult::Aborted;
                                     break;
                                 }
-                                
+
                                 wait (retryIntervalMs);
                                 iRetry++;
                                 lastKnownSampleNumber = currentSampleNumber;
@@ -171,7 +196,7 @@ void DataCollector::run()
                         case RingBufferReadResult::UnknownError:
                             assert (false);
                             break;
-                        
+
                         case RingBufferReadResult::Aborted:
                             // Valid result - happens when time jumps backwards or max retries exceeded
                             break;

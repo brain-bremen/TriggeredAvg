@@ -3,7 +3,7 @@
 
     This file is part of the Open Ephys GUI Plugin Triggered Average
     Copyright (C) 2022 Open Ephys
-    Copyright (C) 2025 Joscha Schmiedt
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
 
     ------------------------------------------------------------------
 
@@ -160,8 +160,8 @@ void TriggeredAvgNode::parameterValueChanged (Parameter* param)
     {
         const int maxTrials = (int) param->getValue();
         const int totalSamples = getNumberOfSamples();
-        m_dataStore->ResizeAllAverageBuffers(getTotalNumInputChannels(), totalSamples, maxTrials);
-        
+        m_dataStore->ResizeAllAverageBuffers (getTotalNumInputChannels(), totalSamples, maxTrials);
+
         if (m_canvas)
         {
             triggerAsyncUpdate();

@@ -1,4 +1,26 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 
 #include "TimeAxis.h"
 using namespace TriggeredAverage;
@@ -9,7 +31,8 @@ void TriggeredAverage::TimeAxis::paint (Graphics& g)
     const float fWidth = static_cast<float> (getWidth());
     const float fHistogramWidthPx = (fWidth - 30);
 
-    float zeroLoc = static_cast<float> (preTriggerMs) / static_cast<float> (preTriggerMs + postTriggerMs) * fHistogramWidthPx;
+    float zeroLoc = static_cast<float> (preTriggerMs)
+                    / static_cast<float> (preTriggerMs + postTriggerMs) * fHistogramWidthPx;
 
     g.setColour (Colours::white);
     g.drawLine (zeroLoc, 0, zeroLoc, fHeight, 2.0);
@@ -42,7 +65,12 @@ void TriggeredAverage::TimeAxis::paint (Graphics& g)
     while (tick < postTriggerMs)
     {
         g.drawLine (tickLoc, fHeight, tickLoc, fHeight - 8, 2.0);
-        g.drawText (String (tick), static_cast<int> (tickLoc - 50.0f), static_cast<int> (fHeight - 25.0f), 100, 15, Justification::centred);
+        g.drawText (String (tick),
+                    static_cast<int> (tickLoc - 50.0f),
+                    static_cast<int> (fHeight - 25.0f),
+                    100,
+                    15,
+                    Justification::centred);
         tick += stepSize;
         tickLoc += tickDistance;
     }
@@ -53,7 +81,12 @@ void TriggeredAverage::TimeAxis::paint (Graphics& g)
     while (tick > -preTriggerMs)
     {
         g.drawLine (tickLoc, fHeight, tickLoc, fHeight - 8, 2.0);
-        g.drawText (String (tick), static_cast<int>(tickLoc - 54.0f), static_cast<int>(fHeight - 25.0f), 100, 15, Justification::centred);
+        g.drawText (String (tick),
+                    static_cast<int> (tickLoc - 54.0f),
+                    static_cast<int> (fHeight - 25.0f),
+                    100,
+                    15,
+                    Justification::centred);
         tick -= stepSize;
         tickLoc -= tickDistance;
     }

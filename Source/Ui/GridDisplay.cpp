@@ -1,5 +1,27 @@
-#include "GridDisplay.h"
+/*
+    ------------------------------------------------------------------
 
+    This file is part of the Open Ephys GUI Plugin Triggered Average
+    Copyright (C) 2022 Open Ephys
+    Copyright (C) 2025-2026 Joscha Schmiedt, Universität Bremen
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+#include "GridDisplay.h"
 #include "DataCollector.h"
 #include "SinglePlotPanel.h"
 #include "TriggerSource.h"
@@ -16,7 +38,7 @@ void TriggeredAverage::GridDisplay::refresh()
     {
         panel->invalidateCache();
     }
-    
+
     for (auto panel : panels)
     {
         panel->repaint();
@@ -121,7 +143,7 @@ void TriggeredAverage::GridDisplay::setNumColumns (int numColumns_)
 {
     numColumns = numColumns_;
     resized();
-    }
+}
 
 void TriggeredAverage::GridDisplay::setRowHeight (int height)
 {
@@ -163,7 +185,6 @@ void TriggeredAverage::GridDisplay::setPlotType (TriggeredAverage::DisplayMode p
     }
 }
 
-
 int TriggeredAverage::GridDisplay::getDesiredHeight() const { return totalHeight; }
 
 void TriggeredAverage::GridDisplay::clearPanels()
@@ -171,9 +192,7 @@ void TriggeredAverage::GridDisplay::clearPanels()
     for (auto hist : panels)
     {
         hist->clear();
-
     }
-
 }
 
 void TriggeredAverage::GridDisplay::setYLimits (float minY, float maxY)
@@ -212,12 +231,14 @@ void TriggeredAverage::GridDisplay::resetXLimits()
     repaint();
 }
 
-void TriggeredAverage::GridDisplay::setYLimitsForSource (const TriggerSource* source, float minY, float maxY)
+void TriggeredAverage::GridDisplay::setYLimitsForSource (const TriggerSource* source,
+                                                         float minY,
+                                                         float maxY)
 {
     if (triggerSourceToPanelMap.find (source) != triggerSourceToPanelMap.end())
     {
         Array<SinglePlotPanel*> plotPanels = triggerSourceToPanelMap[source];
-        
+
         for (auto panel : plotPanels)
         {
             panel->setYLimits (minY, maxY);
@@ -225,12 +246,14 @@ void TriggeredAverage::GridDisplay::setYLimitsForSource (const TriggerSource* so
     }
 }
 
-void TriggeredAverage::GridDisplay::setYLimitsForChannel (const ContinuousChannel* channel, float minY, float maxY)
+void TriggeredAverage::GridDisplay::setYLimitsForChannel (const ContinuousChannel* channel,
+                                                          float minY,
+                                                          float maxY)
 {
     if (contChannelToPanelMap.find (channel) != contChannelToPanelMap.end())
     {
         Array<SinglePlotPanel*> plotPanels = contChannelToPanelMap[channel];
-        
+
         for (auto panel : plotPanels)
         {
             panel->setYLimits (minY, maxY);
@@ -282,12 +305,13 @@ void TriggeredAverage::GridDisplay::setTrialOpacity (float opacity)
     }
 }
 
-void TriggeredAverage::GridDisplay::setTrialBuffersForSource (const TriggerSource* source, const SingleTrialBuffer* trialBuffer)
+void TriggeredAverage::GridDisplay::setTrialBuffersForSource (const TriggerSource* source,
+                                                              const SingleTrialBuffer* trialBuffer)
 {
     if (triggerSourceToPanelMap.find (source) != triggerSourceToPanelMap.end())
     {
         Array<SinglePlotPanel*> plotPanels = triggerSourceToPanelMap[source];
-        
+
         for (auto panel : plotPanels)
         {
             panel->setTrialBuffer (trialBuffer);
