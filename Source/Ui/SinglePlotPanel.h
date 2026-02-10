@@ -138,11 +138,8 @@ private:
     bool updateCachedAveragPath();
     bool updateCachedTrialPaths();
 
-    std::unique_ptr<Label> infoLabel;
     std::unique_ptr<Label> channelLabel;
     std::unique_ptr<Label> conditionLabel;
-    std::unique_ptr<Label> hoverLabel;
-    std::unique_ptr<Label> trialCounter;
 
     bool plotAllTraces = true;
     bool plotAverage = true;

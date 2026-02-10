@@ -49,12 +49,6 @@ SinglePlotPanel::SinglePlotPanel (const GridDisplay* display_,
     post_ms = 0;
     bin_size_ms = 10;
 
-    infoLabel = std::make_unique<Label> ("info label");
-    infoLabel->setJustificationType (Justification::topLeft);
-    infoLabel->setText (channel->getName(), dontSendNotification);
-    infoLabel->setColour (Label::textColourId, Colours::white);
-    addAndMakeVisible (infoLabel.get());
-
     const auto font12pt = Font { withDefaultMetrics (FontOptions { 12.0f }) };
     const auto font16pt = Font { withDefaultMetrics (FontOptions { 16.0f }) };
 
@@ -62,34 +56,16 @@ SinglePlotPanel::SinglePlotPanel (const GridDisplay* display_,
     channelLabel->setFont (font12pt);
     channelLabel->setJustificationType (Justification::topLeft);
     channelLabel->setColour (Label::textColourId, Colours::white);
-    String channelString = "";
-    for (auto ch : channel->getName())
-        channelString += ch + ", ";
-
-    channelString = channelString.substring (0, channelString.length() - 2);
-    channelLabel->setText (channelString, dontSendNotification);
+    channelLabel->setText (channel->getName(), dontSendNotification);
     addAndMakeVisible (channelLabel.get());
 
     conditionLabel = std::make_unique<Label> ("condition label");
-    conditionLabel->setFont (font16pt);
+    conditionLabel->setFont (font12pt);
     conditionLabel->setJustificationType (Justification::topLeft);
-    conditionLabel->setText (m_triggerSource->name, dontSendNotification);
+    String conditionText = m_triggerSource->name + " (N=" + String (numTrials) + ")";
+    conditionLabel->setText (conditionText, dontSendNotification);
     conditionLabel->setColour (Label::textColourId, baseColour);
     addAndMakeVisible (conditionLabel.get());
-
-    hoverLabel = std::make_unique<Label> ("hover label");
-    hoverLabel->setJustificationType (Justification::topLeft);
-    hoverLabel->setFont (font12pt);
-    hoverLabel->setColour (Label::textColourId, Colours::white);
-    addAndMakeVisible (hoverLabel.get());
-
-    trialCounter = std::make_unique<Label> ("trial counter");
-    trialCounter->setFont (font12pt);
-    trialCounter->setJustificationType (Justification::centredTop);
-    juce::String trialCounterString = String ("Trials: ") + String (numTrials);
-    trialCounter->setText (trialCounterString, dontSendNotification);
-    trialCounter->setColour (Label::textColourId, baseColour);
-    addAndMakeVisible (trialCounter.get());
 
     clear();
 }
@@ -117,42 +93,34 @@ void SinglePlotPanel::resized()
         updateCachedAveragPath();
     }
 
-    infoLabel->setBounds (labelOffset, 10, 150, 30);
+    channelLabel->setBounds (labelOffset, 10, 150, 20);
 
     if (getHeight() < 100)
     {
-        conditionLabel->setBounds (labelOffset, 26, 150, 30);
+        conditionLabel->setBounds (labelOffset, 30, 150, 20);
         channelLabel->setVisible (false);
-        hoverLabel->setVisible (false);
     }
     else
     {
-        conditionLabel->setBounds (labelOffset, 49, 150, 15);
-        channelLabel->setVisible (! overlayMode);
-        channelLabel->setBounds (labelOffset, 26, 150, 30);
-
-        hoverLabel->setVisible (! overlayMode);
-        hoverLabel->setBounds (labelOffset, 66, 150, 45);
+        channelLabel->setVisible (true);
+        conditionLabel->setBounds (labelOffset, 30, 150, 20);
     }
 
     if (labelOffset == 5)
     {
         conditionLabel->setVisible (false);
         channelLabel->setVisible (false);
-        hoverLabel->setBounds (width - 120, 10, 150, 45);
     }
     else
     {
         conditionLabel->setVisible (true);
-        channelLabel->setVisible (! overlayMode);
+        channelLabel->setVisible (true);
 
         if (overlayMode)
         {
-            conditionLabel->setBounds (labelOffset, 49 + 18 * overlayIndex, 150, 15);
+            conditionLabel->setBounds (labelOffset, 30 + 18 * overlayIndex, 150, 20);
         }
     }
-
-    trialCounter->setBounds (labelOffset, 85, 150, 20);
 }
 
 void SinglePlotPanel::clear()
@@ -162,7 +130,8 @@ void SinglePlotPanel::clear()
     cachedAveragePath.clear();
     cachedTrialPaths.clear();
     cachedTrialCount = -1;
-    trialCounter->setText ("0", dontSendNotification);
+    String conditionText = m_triggerSource->name + " (N=0)";
+    conditionLabel->setText (conditionText, dontSendNotification);
     repaint();
 }
 
@@ -295,7 +264,8 @@ void SinglePlotPanel::drawBackground (bool shouldDraw)
 {
     shouldDrawBackground = shouldDraw;
 
-    infoLabel->setVisible (shouldDrawBackground);
+    channelLabel->setVisible (shouldDrawBackground);
+    conditionLabel->setVisible (shouldDrawBackground);
 }
 
 void SinglePlotPanel::setOverlayMode (bool shouldOverlay) { overlayMode = shouldOverlay; }
@@ -851,8 +821,9 @@ bool SinglePlotPanel::updateCachedAveragPath()
         avgBuffer = m_averageBuffer->getAverage();
     }
 
-    auto trialCounterString = String (m_averageBuffer->getNumTrials());
-    trialCounter->setText (trialCounterString, dontSendNotification);
+    auto trialCounterString =
+        m_triggerSource->name + " (N=" + String (m_averageBuffer->getNumTrials()) + ")";
+    conditionLabel->setText (trialCounterString, dontSendNotification);
 
     if (avgBuffer.getNumSamples() == 0 || avgBuffer.getNumChannels() == 0)
         return false;
@@ -949,19 +920,12 @@ void SinglePlotPanel::paint (Graphics& g)
 
 void SinglePlotPanel::mouseMove (const MouseEvent& event)
 {
-    if (event.getPosition().x < panelWidthPx)
-    {
-        String hoverString = "TODO";
-        hoverLabel->setText (hoverString, dontSendNotification);
-
-        repaint();
-    }
+    // Hover functionality removed
 }
 
 void SinglePlotPanel::mouseExit (const MouseEvent& event)
 {
-    hoverLabel->setText ("", dontSendNotification);
-    repaint();
+    // Hover functionality removed
 }
 
 void SinglePlotPanel::comboBoxChanged (ComboBox* comboBox)
