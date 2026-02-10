@@ -23,6 +23,7 @@
 */
 #include "SingleTrialBuffer.h"
 #include <cassert>
+#include <cstring>
 
 namespace TriggeredAverage
 {
