@@ -2,12 +2,9 @@ cmake_minimum_required(VERSION 3.23.0)
 
 set(PLUGIN_NAME TriggeredAvg)
 
-# Option to enable clang-tidy
-option(ENABLE_CLANG_TIDY "Enable clang-tidy checks during build" OFF)
-
 # Plugin version information
-set(PLUGIN_VERSION_MAJOR 1)
-set(PLUGIN_VERSION_MINOR 0)
+set(PLUGIN_VERSION_MAJOR 0)
+set(PLUGIN_VERSION_MINOR 1)
 set(PLUGIN_VERSION_PATCH 0)
 set(PLUGIN_VERSION "${PLUGIN_VERSION_MAJOR}.${PLUGIN_VERSION_MINOR}.${PLUGIN_VERSION_PATCH}")
 
@@ -53,17 +50,6 @@ list(APPEND CMAKE_PREFIX_PATH ${GUI_COMMONLIB_DIR} ${GUI_COMMONLIB_DIR}/${CONFIG
 set(GUI_BIN_DIR ${GUI_BASE_DIR}/Build/${CONFIGURATION_FOLDER})
 message(DEBUG "Using GUI_BASE_DIR: " ${GUI_BASE_DIR})
 message(DEBUG "GUI_BIN_DIR will be: " ${GUI_BASE_DIR}/Build/[Debug|Release])
-
-# Setup clang-tidy if enabled
-if(ENABLE_CLANG_TIDY)
-    find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
-    if(CLANG_TIDY_EXE)
-        message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")
-        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
-    else()
-        message(WARNING "clang-tidy requested but not found")
-    endif()
-endif()
 
 # Setup clang-format target
 find_program(CLANG_FORMAT_EXE NAMES "clang-format")
