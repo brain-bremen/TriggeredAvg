@@ -21,6 +21,7 @@ set(TRIGGERED_AVG_HEADERS_RELATIVE
     TriggeredAvgActions.h
     TriggeredAvgNode.h
     TriggerSource.h
+    Ui/DisplayMode.h
     Ui/GridDisplay.h
     Ui/SinglePlotPanel.h
     Ui/TimeAxis.h
